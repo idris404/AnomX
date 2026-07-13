@@ -1,0 +1,37 @@
+---
+description: Windows portability and dev environment constraints
+alwaysApply: true
+---
+
+# Windows Dev Environment
+
+Primary dev path: **PowerShell native + Docker Desktop + uv + GNU Make (GnuWin32)**. No WSL2 shell. No Unix-only paths.
+
+## Absolute rules
+
+- **Never** hardcode OS paths: no `.local/bin/uv`, no `/Users/...`, no `~/...`
+- Invoke tools by name on PATH: `uv`, `python`, `docker`, `make`, `pytest`
+- Makefile must work with **GnuWin32 Make** — avoid bash-only syntax (`$(shell ...)`, heredocs, `&&` chains in complex recipes)
+- `.gitattributes` enforces **LF** line endings on all text files
+
+## Standard commands
+
+```powershell
+make install      # uv sync --all-packages --group dev
+make docker-up    # Postgres 16 + Redis 7
+make test         # pytest
+make api          # FastAPI on :8000
+```
+
+## Python version
+
+Pinned **3.11** via `.python-version`. Never use 3.12+ features. Range: `>=3.11,<3.12`.
+
+## Docker
+
+- Compose file at repo root; init SQL mounted from `infra/postgres/init.sql`
+- If `docker compose up` fails with pipe error → Docker Desktop is not running; ask user to start it
+
+## README
+
+Windows/PowerShell is the **documented default** setup path. Other OS notes are secondary.

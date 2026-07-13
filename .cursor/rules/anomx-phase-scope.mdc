@@ -1,0 +1,46 @@
+---
+description: Phase scope guardrails — what to build and what to defer
+alwaysApply: true
+---
+
+# Phase Scope Guardrails
+
+Do not scope-creep. When asked to implement a feature, check which phase it belongs to.
+
+## Phase 1 (next) — Batch ingestion
+
+**Build**: `CsvBatchSource`, Pandera validation, Postgres repos (`raw_events`, `ingestion_runs`), CLI `anomx ingest`
+
+**Defer**: Kafka, multi-tenant, S3, detection, dashboard, Dagster
+
+## Phase 2 — Detectors
+
+**Build**: `RollingZScoreDetector` OR `MADDetector` (pick one), `IsolationForestDetector`, `EnsembleDetector`, calibration, CLI `anomx detect`
+
+**Defer**: autoencoder/deep learning (only if Phase 3 benchmark F1 < 0.75 on a flux)
+
+## Phase 3–5 — Benchmark, explainability, API/UI
+
+See `docs/architecture.md` and ADRs in `docs/decisions/`.
+
+## Demo datasets (do not cherry-pick metrics)
+
+- **Flux A**: NAB (labeled, reproductible)
+- **Flux B**: Online Retail II + synthetic injection
+- **Flux C**: Pagila audit log (PostgreSQL poll, not Debezium yet)
+
+## When simplifying for MVP, always document
+
+1. What we ship now
+2. What production would require (e.g. "poll 30s → Debezium/Kafka in Phase 8")
+3. Interview one-liner to defend the compromise
+
+## File placement for new code
+
+| What | Where |
+|------|-------|
+| Connector | `packages/anomx/anomx/connectors/` |
+| Detector | `packages/anomx/anomx/detectors/` |
+| API route | `services/api/app/routes/` |
+| Config YAML | `config/sources/` or `configs/streams/` |
+| ADR | `docs/decisions/` |

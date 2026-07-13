@@ -1,0 +1,32 @@
+---
+description: AnomX project vision, phase status, and agent workflow
+alwaysApply: true
+---
+
+# AnomX — Project Context
+
+AnomX is a **pluggable anomaly detection engine** (time series + tabular). Portfolio goal: demonstrate **data engineering** (pipelines, storage, orchestration, MLOps), not another generic RAG chatbot.
+
+## Current status
+
+- **Phase 0: DONE** — interfaces, Postgres schema, FastAPI `/health`, Docker Compose, CI
+- **Next: Phase 1** — CSV batch ingestion (Polars + Pandera), Postgres persistence, CLI `anomx ingest`
+
+## Non-negotiable decisions (do not revert without explicit discussion)
+
+1. **Orchestration**: Dagster (Phase 7), not Prefect/Airflow
+2. **Repo split**: `packages/anomx/` (pure lib, publishable) vs `services/*` (thin app layers)
+3. **MVP detectors**: Z-score/MAD + Isolation Forest only — no autoencoder unless benchmark proves gap
+4. **Dashboard MVP**: Streamlit (Phase 5); Next.js optional polish (Phase 10)
+
+## How agents must work
+
+- Explain technical choices in 1–2 sentences (defensible in interview)
+- Build in **verifiable steps** — one connector/detector/test at a time, not 2000-line dumps
+- State **MVP compromise vs production** explicitly for every simplification
+- Be honest about weaknesses; never assume "it should work" — run commands and verify
+- Do not commit unless the user explicitly asks
+
+## Priority order if time is short
+
+Indispensable: Phases 0→5 | Strong differentiator: 7 + 9 | Bonus: 6 + 8 | Polish: 10

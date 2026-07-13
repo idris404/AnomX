@@ -1,0 +1,36 @@
+---
+description: Library vs services architecture boundaries
+globs: packages/**/*,services/**/*
+alwaysApply: false
+---
+
+# Architecture — Lib vs Services
+
+## `packages/anomx/` (core library)
+
+- **Zero imports** of FastAPI, Streamlit, Dagster, ARQ, uvicorn
+- Must work via `pip install anomx`, CLI, or notebook — standalone
+- Business logic lives here: connectors, detectors, benchmark, explain, storage repos
+- **mypy strict** on all `anomx/` code
+
+## `services/*` (application layers)
+
+- Thin wrappers that call `anomx` — never duplicate core logic
+- `services/api/` — FastAPI routes, workers (Phase 5+), schemas
+- `services/dashboard/` — Streamlit (Phase 5, not yet scaffolded)
+- `services/orchestrator/` — Dagster assets wrapping `anomx` functions (Phase 7)
+
+## Dependency direction
+
+```
+services/*  →  packages/anomx
+packages/anomx  ↛  services/*
+```
+
+## Interfaces (Protocol-based)
+
+`Source`, `Sink`, `Detector`, `Alerter` in `anomx/core/interfaces.py` — extend via new modules, not by editing services.
+
+## Postgres schema
+
+Tables: `streams`, `runs`, `observations`, `scores`, `alerts` — defined in `infra/postgres/init.sql`. Extend via migrations, not ad-hoc DDL in app code.

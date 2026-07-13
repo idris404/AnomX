@@ -1,0 +1,45 @@
+---
+description: Python coding standards for AnomX
+globs: **/*.py
+alwaysApply: false
+---
+
+# Python Standards
+
+## Typing & quality
+
+- **mypy strict** on `packages/anomx/anomx/`
+- Pydantic v2 for schemas and settings
+- structlog for logging (structured, no bare `print` in library code)
+- ruff for lint/format — run `make lint` before finishing
+
+## Dependencies by phase (do not add early)
+
+| Phase | Allowed additions |
+|-------|-------------------|
+| 1 | Polars, Pandera, psycopg/asyncpg |
+| 2 | scikit-learn |
+| 5 | ARQ, Streamlit |
+| 7 | Dagster |
+| 8 | confluent-kafka / aiokafka, Redpanda |
+| 9 | MLflow, SHAP |
+
+Adding a lib from a future phase requires justification tied to the current phase scope.
+
+## Testing
+
+- pytest in `packages/anomx/tests/` and `services/*/tests/`
+- Test real behavior; skip trivial "assert True" tests
+- Prefer Protocol-compliant fakes over mocks for core interfaces
+
+## Example — correct detector stub
+
+```python
+# packages/anomx/anomx/detectors/zscore.py
+class RollingZScoreDetector:
+    def fit(self, data: list[dict[str, Any]]) -> None: ...
+    def score(self, data: list[dict[str, Any]]) -> list[float]: ...
+    def predict(self, data: list[dict[str, Any]]) -> list[bool]: ...
+```
+
+Detectors implement the `Detector` Protocol — same `fit/score/predict` contract everywhere.
