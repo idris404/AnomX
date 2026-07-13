@@ -10,7 +10,8 @@ from pathlib import Path
 import structlog
 
 from anomx import __version__
-from anomx.config.loader import load_app_settings, load_csv_source_config
+from anomx.config.loader import load_app_settings, load_csv_source_config, load_detect_config
+from anomx.detect.service import DetectService
 from anomx.ingest.service import IngestService
 
 logger = structlog.get_logger(__name__)
@@ -44,6 +45,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to app settings YAML (database connection)",
     )
 
+    detect_parser = subparsers.add_parser("detect", help="Run anomaly detection on a stream")
+    detect_parser.add_argument(
+        "--stream",
+        required=True,
+        help="Stream name (must match a previously ingested source)",
+    )
+    detect_parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path("config/detectors.yaml"),
+        help="Path to detector YAML config",
+    )
+    detect_parser.add_argument(
+        "--settings",
+        type=Path,
+        default=Path("config/settings.yaml"),
+        help="Path to app settings YAML (database connection)",
+    )
+
     return parser
 
 
@@ -66,6 +86,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "ingest":
         return _run_ingest(args.config, args.settings)
 
+    if args.command == "detect":
+        return _run_detect(args.stream, args.config, args.settings)
+
     parser.print_help()
     return 0 if args.command is None else 1
 
@@ -84,6 +107,25 @@ def _run_ingest(config_path: Path, settings_path: Path) -> int:
         "records_written": result.records_written,
         "content_hash": result.content_hash,
         "skipped": result.skipped,
+    }
+    print(json.dumps(payload, indent=2))  # noqa: T201
+    return 0
+
+
+def _run_detect(stream_name: str, config_path: Path, settings_path: Path) -> int:
+    detect_config = load_detect_config(config_path)
+    app_settings = load_app_settings(settings_path)
+    service = DetectService(database=app_settings.database)
+    result = service.detect_stream(stream_name, detect_config)
+
+    payload = {
+        "run_id": str(result.run_id),
+        "stream_id": str(result.stream_id),
+        "stream_name": result.stream_name,
+        "source_run_id": str(result.source_run_id),
+        "observations_scored": result.observations_scored,
+        "alerts_created": result.alerts_created,
+        "ensemble_threshold": result.ensemble_threshold,
     }
     print(json.dumps(payload, indent=2))  # noqa: T201
     return 0

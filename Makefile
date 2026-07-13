@@ -12,6 +12,7 @@ help:
 	@echo   db-migrate   Apply Phase 1 Postgres migration (existing DBs)
 	@echo   sample-data  Generate data/samples/example.csv
 	@echo   ingest-demo  Ingest sample CSV into Postgres
+	@echo   detect-demo  Ingest + run anomaly detection on sample_csv
 	@echo   clean        Remove caches and build artifacts
 
 install:
@@ -47,6 +48,9 @@ sample-data:
 
 ingest-demo: sample-data
 	uv run anomx ingest --config config/sources/sample_csv.yaml
+
+detect-demo: ingest-demo
+	uv run anomx detect --stream sample_csv --config config/detectors.yaml
 
 clean:
 	if exist .pytest_cache rmdir /s /q .pytest_cache

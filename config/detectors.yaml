@@ -1,9 +1,21 @@
-# Detector configuration (Phase 2+)
-# Phase 0: placeholder only
-
 defaults:
   calibration:
     method: percentile
     percentile: 95.0
+  fit_ratio: 0.8
+  value_key: value
 
-detectors: []
+detectors:
+  - name: mad
+    type: mad
+    weight: 0.5
+    params:
+      value_key: value
+
+  - name: isolation_forest
+    type: isolation_forest
+    weight: 0.5
+    params:
+      feature_keys: [value]
+      contamination: 0.05
+      random_state: 42

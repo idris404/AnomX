@@ -11,13 +11,11 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 
 **Built**: `CsvBatchSource`, Pandera validation, Postgres repos via `runs`/`observations`, CLI `anomx ingest`, idempotency via content hash
 
-## Phase 2 (next) — Detectors
+## Phase 2 (done) — Detectors
 
-**Build**: `RollingZScoreDetector` OR `MADDetector` (pick one), `IsolationForestDetector`, `EnsembleDetector`, calibration, CLI `anomx detect`
+**Built**: `MADDetector`, `IsolationForestDetector`, `EnsembleDetector`, calibration percentile, CLI `anomx detect`, scores + alerts in Postgres
 
-**Defer**: autoencoder/deep learning (only if Phase 3 benchmark F1 < 0.75 on a flux)
-
-## Phase 3–5 — Benchmark, explainability, API/UI
+## Phase 3 (next) — Benchmark
 
 See `docs/architecture.md` and ADRs in `docs/decisions/`.
 

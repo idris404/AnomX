@@ -28,6 +28,18 @@ Phase 0 established foundations only:
 
 No detection logic or orchestration yet.
 
+## Phase 2 Scope
+
+- `MADDetector` — robust univariate baseline (MAD z-score)
+- `IsolationForestDetector` — multivariate sklearn baseline
+- `EnsembleDetector` — weighted fusion + percentile calibration
+- CLI `anomx detect --stream <name>`
+- Persistence in `scores` and `alerts` tables
+
+## Phase 3 Scope (next)
+
+Benchmark framework with synthetic injection and reproducible metrics.
+
 ## Data Flow (target)
 
 ```

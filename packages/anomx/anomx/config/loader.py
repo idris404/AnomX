@@ -7,6 +7,7 @@ from typing import Any
 
 import yaml
 
+from anomx.config.detect_models import DetectConfig
 from anomx.config.models import AppSettings, CsvBatchSourceConfig
 
 
@@ -28,3 +29,7 @@ def load_app_settings(path: Path | None = None) -> AppSettings:
 
 def load_csv_source_config(path: Path) -> CsvBatchSourceConfig:
     return CsvBatchSourceConfig.model_validate(load_yaml(path))
+
+
+def load_detect_config(path: Path) -> DetectConfig:
+    return DetectConfig.model_validate(load_yaml(path))
