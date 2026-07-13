@@ -30,6 +30,7 @@ Pinned **3.11** via `.python-version`. Never use 3.12+ features. Range: `>=3.11,
 ## Docker
 
 - Compose file at repo root; init SQL mounted from `infra/postgres/init.sql`
+- **Postgres host port 5433** (container 5432) — avoids conflict with local PostgreSQL on Windows
 - If `docker compose up` fails with pipe error → Docker Desktop is not running; ask user to start it
 
 ## README

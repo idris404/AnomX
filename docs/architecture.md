@@ -11,7 +11,7 @@ AnomX is a pluggable anomaly detection engine. The codebase follows a strict **l
 
 ## Phase 0 Scope
 
-Phase 0 establishes foundations only:
+Phase 0 established foundations only:
 
 - Protocol interfaces (`Source`, `Sink`, `Detector`, `Alerter`)
 - PostgreSQL schema (streams, runs, observations, scores, alerts)
@@ -19,7 +19,14 @@ Phase 0 establishes foundations only:
 - FastAPI health endpoint
 - CI pipeline (ruff + mypy strict + pytest)
 
-No detection logic, ingestion, or orchestration yet.
+## Phase 1 Scope (current)
+
+- `CsvBatchSource` — Polars read + Pandera validation
+- Postgres persistence via `runs` + `observations` (maps to ingestion_runs / raw_events)
+- CLI `anomx ingest --config config/sources/<source>.yaml`
+- Idempotent re-ingestion via file content hash
+
+No detection logic or orchestration yet.
 
 ## Data Flow (target)
 

@@ -10,7 +10,8 @@ AnomX is a **pluggable anomaly detection engine** (time series + tabular). Portf
 ## Current status
 
 - **Phase 0: DONE** — interfaces, Postgres schema, FastAPI `/health`, Docker Compose, CI
-- **Next: Phase 1** — CSV batch ingestion (Polars + Pandera), Postgres persistence, CLI `anomx ingest`
+- **Phase 1: DONE** — CSV batch ingestion (Polars + Pandera), Postgres persistence, CLI `anomx ingest`
+- **Next: Phase 2** — detectors (Z-score/MAD + Isolation Forest), ensemble, CLI `anomx detect`
 
 ## Non-negotiable decisions (do not revert without explicit discussion)
 
@@ -26,6 +27,7 @@ AnomX is a **pluggable anomaly detection engine** (time series + tabular). Portf
 - State **MVP compromise vs production** explicitly for every simplification
 - Be honest about weaknesses; never assume "it should work" — run commands and verify
 - Do not commit unless the user explicitly asks
+- **End of phase/addition**: always provide a suggested commit message + manual tests for the user (see `anomx-delivery-checklist.mdc`)
 
 ## Priority order if time is short
 

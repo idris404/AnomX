@@ -9,6 +9,10 @@ authors = [{ name = "Idris" }]
 dependencies = [
     "pydantic>=2.0,<3",
     "structlog>=24.0",
+    "polars>=1.0",
+    "pandera>=0.20",
+    "psycopg[binary]>=3.2",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]
@@ -40,3 +44,6 @@ line-length = 100
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "integration: tests requiring PostgreSQL (docker compose up)",
+]

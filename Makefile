@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck api docker-up docker-down clean help
+.PHONY: install test lint typecheck api docker-up docker-down db-migrate sample-data ingest-demo clean help
 
 help:
 	@echo AnomX — available targets:
@@ -9,6 +9,9 @@ help:
 	@echo   api          Start FastAPI dev server on port 8000
 	@echo   docker-up    Start Postgres and Redis containers
 	@echo   docker-down  Stop and remove containers
+	@echo   db-migrate   Apply Phase 1 Postgres migration (existing DBs)
+	@echo   sample-data  Generate data/samples/example.csv
+	@echo   ingest-demo  Ingest sample CSV into Postgres
 	@echo   clean        Remove caches and build artifacts
 
 install:
@@ -31,6 +34,19 @@ docker-up:
 
 docker-down:
 	docker compose down
+
+db-reset:
+	docker compose down -v
+	docker compose up -d
+
+db-migrate:
+	docker exec -i anomx-postgres psql -U anomx -d anomx < infra/postgres/migrations/001_phase1_ingestion.sql
+
+sample-data:
+	uv run python scripts/generate_sample_csv.py
+
+ingest-demo: sample-data
+	uv run anomx ingest --config config/sources/sample_csv.yaml
 
 clean:
 	if exist .pytest_cache rmdir /s /q .pytest_cache

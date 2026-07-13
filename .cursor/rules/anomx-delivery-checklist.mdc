@@ -1,0 +1,41 @@
+---
+description: End-of-phase delivery — commit message and manual tests for the user
+alwaysApply: true
+---
+
+# Delivery Checklist (end of every phase or significant addition)
+
+At the **end of every response** that completes a phase or meaningful feature, always include two sections:
+
+## 1. Commit (if applicable)
+
+If changes were made and a commit is warranted, provide:
+
+```
+feat(scope): short imperative summary
+
+Optional body: 1-2 sentences on why, not what.
+```
+
+Rules:
+- Use Conventional Commits: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`
+- Scope examples: `ingest`, `detect`, `api`, `docker`, `ci`
+- **Do not run `git commit`** unless the user explicitly asks
+- If nothing to commit or work is incomplete, say so explicitly
+
+## 2. Tests manuels (côté utilisateur)
+
+List concrete commands the user should run locally to validate, in order:
+
+```powershell
+make docker-up
+make test
+# ... phase-specific commands
+```
+
+Include:
+- Expected output or success criteria (one line each)
+- Known prerequisites (Docker running, port 5433, etc.)
+- What to check if something fails
+
+Keep both sections concise — bullet points over paragraphs.

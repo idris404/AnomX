@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     debug: bool = False
 
     postgres_host: str = "localhost"
-    postgres_port: int = 5432
+    postgres_port: int = 5433
     postgres_user: str = "anomx"
     postgres_password: str = "anomx"
     postgres_db: str = "anomx"

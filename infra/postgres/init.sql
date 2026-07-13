@@ -24,14 +24,19 @@ CREATE TABLE IF NOT EXISTS runs (
 
 CREATE INDEX IF NOT EXISTS idx_runs_stream_id ON runs(stream_id);
 CREATE INDEX IF NOT EXISTS idx_runs_status ON runs(status);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_runs_stream_content_hash
+    ON runs(stream_id, (metadata->>'content_hash'))
+    WHERE status = 'completed' AND metadata->>'content_hash' IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS observations (
-    id          BIGSERIAL PRIMARY KEY,
-    run_id      UUID NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
-    stream_id   UUID NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
-    observed_at TIMESTAMPTZ NOT NULL,
-    payload     JSONB NOT NULL,
-    created_at  TIMESTAMPTZ NOT NULL DEFAULT now()
+    id               BIGSERIAL PRIMARY KEY,
+    run_id           UUID NOT NULL REFERENCES runs(id) ON DELETE CASCADE,
+    stream_id        UUID NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
+    observed_at      TIMESTAMPTZ NOT NULL,
+    payload          JSONB NOT NULL,
+    row_fingerprint  TEXT NOT NULL,
+    created_at       TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (stream_id, row_fingerprint)
 );
 
 CREATE INDEX IF NOT EXISTS idx_observations_run_id ON observations(run_id);

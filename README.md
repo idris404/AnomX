@@ -24,7 +24,7 @@ cd AnomX
 # Install all workspace dependencies
 make install
 
-# Start infrastructure (PostgreSQL 16 + Redis 7)
+# Start infrastructure (PostgreSQL 16 on port 5433 + Redis 7)
 make docker-up
 
 # Run tests
@@ -70,7 +70,11 @@ docs/               # Architecture docs and ADRs
 
 ## Phase 0 Status
 
-This is the **Phase 0 foundation** — interfaces, schema, health API, CI. Detection, ingestion, benchmark, and dashboard arrive in subsequent phases.
+Phase 0 foundations are complete. **Phase 1** adds CSV batch ingestion via `anomx ingest`.
+
+### Windows note — PostgreSQL port
+
+Docker Postgres listens on **host port 5433** (not 5432) to avoid conflicts with a local PostgreSQL installation. If ingestion fails with "password authentication failed", verify nothing else is bound to 5433 and that `config/settings.yaml` uses `port: 5433`.
 
 ## License
 

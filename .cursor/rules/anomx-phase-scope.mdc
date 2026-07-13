@@ -7,13 +7,11 @@ alwaysApply: true
 
 Do not scope-creep. When asked to implement a feature, check which phase it belongs to.
 
-## Phase 1 (next) — Batch ingestion
+## Phase 1 (done) — Batch ingestion
 
-**Build**: `CsvBatchSource`, Pandera validation, Postgres repos (`raw_events`, `ingestion_runs`), CLI `anomx ingest`
+**Built**: `CsvBatchSource`, Pandera validation, Postgres repos via `runs`/`observations`, CLI `anomx ingest`, idempotency via content hash
 
-**Defer**: Kafka, multi-tenant, S3, detection, dashboard, Dagster
-
-## Phase 2 — Detectors
+## Phase 2 (next) — Detectors
 
 **Build**: `RollingZScoreDetector` OR `MADDetector` (pick one), `IsolationForestDetector`, `EnsembleDetector`, calibration, CLI `anomx detect`
 

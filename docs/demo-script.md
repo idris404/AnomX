@@ -2,19 +2,25 @@
 
 This document will contain the 10-minute recruiter demo script once the MVP is complete.
 
-## Phase 0 Validation Checklist
+## Phase 1 Validation Checklist
 
 ```powershell
-uv sync --all-packages --dev
-docker compose up -d
-make test
-make api
-# In another terminal:
-curl http://localhost:8000/health
+make install
+make docker-up
+make test                 # 11 tests including 10k-row integration
+make sample-data
+make ingest-demo          # first run: 100 rows written
+make ingest-demo          # second run: skipped=true (idempotent)
 ```
 
-Expected health response:
+Expected ingest output (first run):
 
 ```json
-{"status":"ok","service":"anomx-api","version":"0.1.0"}
+{"records_read": 100, "records_written": 100, "skipped": false}
+```
+
+Expected ingest output (second run):
+
+```json
+{"records_read": 100, "records_written": 0, "skipped": true}
 ```

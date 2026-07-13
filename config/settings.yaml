@@ -4,3 +4,10 @@ app:
 
 logging:
   level: INFO
+
+database:
+  host: localhost
+  port: 5433
+  user: anomx
+  password: anomx
+  db: anomx
