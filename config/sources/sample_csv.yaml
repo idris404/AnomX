@@ -1,0 +1,8 @@
+# Sample CSV source configuration (Phase 1+)
+# Phase 0: placeholder only
+
+name: sample_csv
+source_type: csv_batch
+path: data/samples/example.csv
+timestamp_column: timestamp
+value_column: value

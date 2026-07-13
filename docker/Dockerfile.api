@@ -1,0 +1,19 @@
+FROM python:3.11-slim
+
+WORKDIR /app
+
+RUN pip install --no-cache-dir uv
+
+COPY pyproject.toml uv.lock ./
+COPY packages/anomx ./packages/anomx
+COPY services/api ./services/api
+
+RUN uv sync --frozen --all-packages --no-dev --package anomx-api
+
+ENV PATH="/app/.venv/bin:$PATH"
+
+WORKDIR /app/services/api
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]

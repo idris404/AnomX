@@ -1,0 +1,38 @@
+.PHONY: install test lint typecheck api docker-up docker-down clean help
+
+help:
+	@echo AnomX — available targets:
+	@echo   install      Sync all workspace dependencies with uv
+	@echo   test         Run pytest across all packages
+	@echo   lint         Run ruff linter
+	@echo   typecheck    Run mypy strict on anomx core
+	@echo   api          Start FastAPI dev server on port 8000
+	@echo   docker-up    Start Postgres and Redis containers
+	@echo   docker-down  Stop and remove containers
+	@echo   clean        Remove caches and build artifacts
+
+install:
+	uv sync --all-packages --group dev
+
+test:
+	uv run pytest
+
+lint:
+	uv run ruff check packages/anomx services/api
+
+typecheck:
+	uv run mypy packages/anomx/anomx
+
+api:
+	uv run --directory services/api uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+docker-up:
+	docker compose up -d
+
+docker-down:
+	docker compose down
+
+clean:
+	if exist .pytest_cache rmdir /s /q .pytest_cache
+	if exist .mypy_cache rmdir /s /q .mypy_cache
+	if exist .ruff_cache rmdir /s /q .ruff_cache

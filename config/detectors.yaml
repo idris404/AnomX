@@ -1,0 +1,9 @@
+# Detector configuration (Phase 2+)
+# Phase 0: placeholder only
+
+defaults:
+  calibration:
+    method: percentile
+    percentile: 95.0
+
+detectors: []
