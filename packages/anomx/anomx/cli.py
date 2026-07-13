@@ -18,6 +18,7 @@ from anomx.config.loader import (
 )
 from anomx.benchmark.runner import BenchmarkRunner
 from anomx.detect.service import DetectService
+from anomx.explain.service import ExplainService
 from anomx.ingest.service import IngestService
 
 logger = structlog.get_logger(__name__)
@@ -78,6 +79,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to benchmark YAML config",
     )
 
+    explain_parser = subparsers.add_parser("explain", help="Show alert explanations for a stream")
+    explain_parser.add_argument(
+        "--stream",
+        required=True,
+        help="Stream name",
+    )
+    explain_parser.add_argument(
+        "--limit",
+        type=int,
+        default=5,
+        help="Maximum number of alerts to display",
+    )
+    explain_parser.add_argument(
+        "--settings",
+        type=Path,
+        default=Path("config/settings.yaml"),
+        help="Path to app settings YAML (database connection)",
+    )
+
     return parser
 
 
@@ -105,6 +125,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "benchmark":
         return _run_benchmark(args.config)
+
+    if args.command == "explain":
+        return _run_explain(args.stream, args.limit, args.settings)
 
     parser.print_help()
     return 0 if args.command is None else 1
@@ -170,6 +193,17 @@ def _run_benchmark(config_path: Path) -> int:
             for detector in result.detectors
         ],
     }
+    print(json.dumps(payload, indent=2))  # noqa: T201
+    return 0
+
+
+def _run_explain(stream_name: str, limit: int, settings_path: Path) -> int:
+    app_settings = load_app_settings(settings_path)
+    views = ExplainService(database=app_settings.database).list_alert_explanations(
+        stream_name,
+        limit=limit,
+    )
+    payload = [view.model_dump() for view in views]
     print(json.dumps(payload, indent=2))  # noqa: T201
     return 0
 

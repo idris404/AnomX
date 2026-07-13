@@ -19,14 +19,12 @@ Phase 0 established foundations only:
 - FastAPI health endpoint
 - CI pipeline (ruff + mypy strict + pytest)
 
-## Phase 1 Scope (current)
+## Phase 1 Scope
 
 - `CsvBatchSource` — Polars read + Pandera validation
 - Postgres persistence via `runs` + `observations` (maps to ingestion_runs / raw_events)
 - CLI `anomx ingest --config config/sources/<source>.yaml`
 - Idempotent re-ingestion via file content hash
-
-No detection logic or orchestration yet.
 
 ## Phase 2 Scope
 
@@ -36,7 +34,7 @@ No detection logic or orchestration yet.
 - CLI `anomx detect --stream <name>`
 - Persistence in `scores` and `alerts` tables
 
-## Phase 3 Scope (current)
+## Phase 3 Scope
 
 - `AnomalyInjector` — point, contextual, drift anomalies (seed fixe)
 - `BenchmarkRunner` — évaluation solo + ensemble, protocole reproductible
@@ -46,14 +44,27 @@ No detection logic or orchestration yet.
 
 **Compromis MVP** : métriques point-level (pas de fenêtre de tolérance event-level NAB). MAD performe mal sur drift/contextual — c'est documenté honnêtement dans le rapport.
 
-## Phase 4 Scope (next)
+## Phase 4 Scope (current)
 
-Explicabilité SHAP + règles lisibles liées aux alertes.
+Human-defensible alert explanations stored in `alerts.explanation` JSONB:
+
+- **`explain/mad_rules.py`** — rule-based MAD explanations (median, MAD, robust z, threshold)
+- **`explain/if_attribution.py`** — permutation-based feature attribution for Isolation Forest
+- **`explain/builder.py`** — composite ensemble explanation (summary, rules, per-detector contributions)
+- **`ExplainService`** + CLI `anomx explain --stream <name> --limit N`
+- Integrated into `DetectService` at alert creation time
+
+**Compromis MVP** : pas de SHAP (packaging Windows/Python 3.11 fragile) — attribution par permutation vs médianes de la fenêtre de fit, output compatible avec le panneau UI Phase 5. Pas de résumé LLM.
+
+## Phase 5 Scope (next)
+
+FastAPI routes for alerts, Streamlit dashboard with "Why this alert?" panel, webhook/Slack alerting, ARQ async jobs.
 
 ## Data Flow (target)
 
 ```
 Connectors → Ingestion → Detection → Scoring → Storage → API / Dashboard / Alerting
+                                              ↘ Explain (on alert)
 ```
 
 See `docs/decisions/` for Architecture Decision Records.

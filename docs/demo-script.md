@@ -36,3 +36,20 @@ make benchmark
 ```
 
 Inspect the Markdown report for detector comparison. Mixed anomaly types (point + contextual + drift) intentionally stress-test detector limits — MAD recall will be lower than on point-only spikes.
+
+## Phase 4 Validation Checklist
+
+```powershell
+make explain-demo
+# attendu : JSON avec summary, rules (median/MAD/z-score), feature_contributions
+
+uv run anomx explain --stream sample_csv --limit 3
+```
+
+Expected explain output fields:
+
+- `summary` — one-line ensemble + primary detector reason
+- `rules` — MAD rules + IF permutation attribution lines
+- `feature_contributions` — weighted feature drivers (e.g. `value`)
+
+Re-run `make detect-demo` on an existing stream updates explanations in place (alert dedupe upsert).

@@ -12,6 +12,7 @@ from anomx.config.detect_models import DetectConfig
 from anomx.config.models import DatabaseSettings
 from anomx.core.ensemble import EnsembleDetector
 from anomx.detectors.factory import build_detector
+from anomx.explain.builder import ExplanationBuilder
 from anomx.storage.detection import DetectionRepository
 from anomx.storage.postgres import postgres_connection
 
@@ -69,6 +70,12 @@ class DetectService:
                 calibration_percentile=config.defaults.calibration.percentile,
             )
             ensemble.fit(fit_data)
+            explanation_builder = ExplanationBuilder(
+                ensemble=ensemble,
+                fit_data=fit_data,
+                value_key=config.defaults.value_key,
+                ensemble_threshold=ensemble.threshold or 0.0,
+            )
 
             individual = ensemble.individual_scores(records)
             ensemble_scores = ensemble.score(records)
@@ -110,20 +117,24 @@ class DetectService:
                     )
 
                     if is_ensemble_anomaly:
-                        repository.insert_alert(
+                        detector_scores = {
+                            name: float(individual[name][index]) for name in names
+                        }
+                        explanation = explanation_builder.build(
+                            record,
+                            detector_scores=detector_scores,
+                            ensemble_score=ensemble_score,
+                        )
+                        inserted = repository.insert_alert(
                             detection_run_id,
                             stream_id,
                             observation_id,
                             ensemble_score,
                             "ensemble",
-                            _build_explanation(
-                                record,
-                                individual,
-                                index,
-                                config.defaults.value_key,
-                            ),
+                            explanation.to_storage_dict(),
                         )
-                        alerts_created += 1
+                        if inserted:
+                            alerts_created += 1
 
                 repository.complete_detection_run(
                     detection_run_id,
@@ -155,21 +166,3 @@ class DetectService:
                 alerts_created=alerts_created,
                 ensemble_threshold=threshold,
             )
-
-
-def _build_explanation(
-    record: dict[str, Any],
-    individual_scores: dict[str, list[float]],
-    index: int,
-    value_key: str,
-) -> dict[str, Any]:
-    observed_at = record["observed_at"]
-    return {
-        "value": record.get(value_key),
-        "observed_at": observed_at.isoformat()
-        if hasattr(observed_at, "isoformat")
-        else str(observed_at),
-        "detector_scores": {
-            name: float(scores[index]) for name, scores in individual_scores.items()
-        },
-    }

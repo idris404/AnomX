@@ -19,7 +19,11 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 
 **Built**: `AnomalyInjector`, `BenchmarkRunner`, métriques P/R/F1/FP/h/latence, CLI `anomx benchmark`, rapports `reports/*.json|md`
 
-## Phase 4 (next) — Explicabilité
+## Phase 4 (done) — Explicabilité
+
+**Built**: MAD rule explanations, IF permutation attribution, `ExplanationBuilder`, explanations in `alerts.explanation` JSONB, CLI `anomx explain`, upsert on alert dedupe
+
+## Phase 5 (next) — API + Dashboard MVP
 
 ## Demo datasets (do not cherry-pick metrics)
 

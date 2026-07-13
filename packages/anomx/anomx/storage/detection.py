@@ -124,18 +124,24 @@ class DetectionRepository:
         score: float,
         detector: str,
         explanation: dict[str, Any],
-    ) -> None:
+    ) -> bool:
         dedupe_key = f"{stream_id}:{observation_id}:{detector}"
-        self._connection.execute(
+        row = self._connection.execute(
             """
             INSERT INTO alerts (
                 run_id, stream_id, observation_id, score, detector, explanation, dedupe_key
             )
             VALUES (%s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO NOTHING
+            ON CONFLICT (dedupe_key) WHERE dedupe_key IS NOT NULL DO UPDATE SET
+                run_id = EXCLUDED.run_id,
+                score = EXCLUDED.score,
+                explanation = EXCLUDED.explanation
+            RETURNING (xmax = 0) AS inserted
             """,
             (run_id, stream_id, observation_id, score, detector, Jsonb(explanation), dedupe_key),
-        )
+        ).fetchone()
+        assert row is not None
+        return bool(row["inserted"])
 
     def count_alerts_for_run(self, run_id: UUID) -> int:
         row = self._connection.execute(
@@ -144,3 +150,24 @@ class DetectionRepository:
         ).fetchone()
         assert row is not None
         return int(row["count"])
+
+    def list_alerts_for_stream(self, stream_id: UUID, *, limit: int = 10) -> list[dict[str, Any]]:
+        rows = self._connection.execute(
+            """
+            SELECT
+                a.id,
+                a.score,
+                a.detector,
+                a.explanation,
+                a.created_at,
+                o.observed_at,
+                o.payload
+            FROM alerts a
+            LEFT JOIN observations o ON o.id = a.observation_id
+            WHERE a.stream_id = %s
+            ORDER BY a.created_at DESC
+            LIMIT %s
+            """,
+            (stream_id, limit),
+        ).fetchall()
+        return [dict(row) for row in rows]

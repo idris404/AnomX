@@ -59,6 +59,14 @@ class IsolationForestDetector:
         predictions = self._model.predict(matrix)
         return [prediction == -1 for prediction in predictions]
 
+    @property
+    def feature_keys(self) -> list[str]:
+        return list(self._feature_keys)
+
+    @property
+    def is_fitted(self) -> bool:
+        return self._is_fitted
+
 
 def _feature_matrix(data: list[dict[str, Any]], feature_keys: list[str]) -> np.ndarray:
     rows: list[list[float]] = []

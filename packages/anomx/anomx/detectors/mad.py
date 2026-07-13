@@ -73,6 +73,22 @@ class MADDetector:
             return []
         return [score > self._threshold for score in scores]
 
+    @property
+    def median(self) -> float:
+        return self._median
+
+    @property
+    def mad(self) -> float:
+        return self._mad
+
+    @property
+    def threshold(self) -> float:
+        return self._threshold
+
+    @property
+    def value_key(self) -> str:
+        return self._value_key
+
 
 def _extract_value(record: dict[str, Any], value_key: str) -> float:
     if value_key not in record:
