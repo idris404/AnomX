@@ -14,11 +14,18 @@ _MAD_SCALE = 1.4826
 class MADDetector:
     """Robust z-score using MAD — interpretable baseline for univariate series."""
 
-    def __init__(self, value_key: str = "value", eps: float = 1e-9) -> None:
+    def __init__(
+        self,
+        value_key: str = "value",
+        eps: float = 1e-9,
+        calibration_percentile: float = 95.0,
+    ) -> None:
         self._value_key = value_key
         self._eps = eps
+        self._calibration_percentile = calibration_percentile
         self._median: float = 0.0
         self._mad: float = 1.0
+        self._threshold: float = 0.0
 
     def fit(self, data: list[dict[str, Any]]) -> None:
         values = [_extract_value(record, self._value_key) for record in data]
@@ -40,8 +47,18 @@ class MADDetector:
         else:
             raw_mad = deviations[mid]
         self._mad = max(raw_mad, self._eps)
+        fit_scores = [
+            abs(value - self._median) / (_MAD_SCALE * self._mad) for value in sorted_values
+        ]
+        self._threshold = percentile_threshold_inline(fit_scores, self._calibration_percentile)
 
-        logger.debug("mad_fitted", median=self._median, mad=self._mad, n_samples=len(values))
+        logger.debug(
+            "mad_fitted",
+            median=self._median,
+            mad=self._mad,
+            threshold=self._threshold,
+            n_samples=len(values),
+        )
 
     def score(self, data: list[dict[str, Any]]) -> list[float]:
         return [
@@ -54,8 +71,7 @@ class MADDetector:
         scores = self.score(data)
         if not scores:
             return []
-        threshold = percentile_threshold_inline(scores, 95.0)
-        return [score > threshold for score in scores]
+        return [score > self._threshold for score in scores]
 
 
 def _extract_value(record: dict[str, Any], value_key: str) -> float:

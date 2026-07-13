@@ -13,6 +13,7 @@ help:
 	@echo   sample-data  Generate data/samples/example.csv
 	@echo   ingest-demo  Ingest sample CSV into Postgres
 	@echo   detect-demo  Ingest + run anomaly detection on sample_csv
+	@echo   benchmark    Run synthetic benchmark and write reports/
 	@echo   clean        Remove caches and build artifacts
 
 install:
@@ -51,6 +52,9 @@ ingest-demo: sample-data
 
 detect-demo: ingest-demo
 	uv run anomx detect --stream sample_csv --config config/detectors.yaml
+
+benchmark:
+	uv run anomx benchmark --config config/benchmark.yaml
 
 clean:
 	if exist .pytest_cache rmdir /s /q .pytest_cache

@@ -15,9 +15,11 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 
 **Built**: `MADDetector`, `IsolationForestDetector`, `EnsembleDetector`, calibration percentile, CLI `anomx detect`, scores + alerts in Postgres
 
-## Phase 3 (next) — Benchmark
+## Phase 3 (done) — Benchmark
 
-See `docs/architecture.md` and ADRs in `docs/decisions/`.
+**Built**: `AnomalyInjector`, `BenchmarkRunner`, métriques P/R/F1/FP/h/latence, CLI `anomx benchmark`, rapports `reports/*.json|md`
+
+## Phase 4 (next) — Explicabilité
 
 ## Demo datasets (do not cherry-pick metrics)
 

@@ -10,7 +10,13 @@ from pathlib import Path
 import structlog
 
 from anomx import __version__
-from anomx.config.loader import load_app_settings, load_csv_source_config, load_detect_config
+from anomx.config.loader import (
+    load_app_settings,
+    load_benchmark_config,
+    load_csv_source_config,
+    load_detect_config,
+)
+from anomx.benchmark.runner import BenchmarkRunner
 from anomx.detect.service import DetectService
 from anomx.ingest.service import IngestService
 
@@ -64,6 +70,14 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to app settings YAML (database connection)",
     )
 
+    benchmark_parser = subparsers.add_parser("benchmark", help="Run reproducible detector benchmark")
+    benchmark_parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path("config/benchmark.yaml"),
+        help="Path to benchmark YAML config",
+    )
+
     return parser
 
 
@@ -88,6 +102,9 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.command == "detect":
         return _run_detect(args.stream, args.config, args.settings)
+
+    if args.command == "benchmark":
+        return _run_benchmark(args.config)
 
     parser.print_help()
     return 0 if args.command is None else 1
@@ -126,6 +143,32 @@ def _run_detect(stream_name: str, config_path: Path, settings_path: Path) -> int
         "observations_scored": result.observations_scored,
         "alerts_created": result.alerts_created,
         "ensemble_threshold": result.ensemble_threshold,
+    }
+    print(json.dumps(payload, indent=2))  # noqa: T201
+    return 0
+
+
+def _run_benchmark(config_path: Path) -> int:
+    benchmark_config = load_benchmark_config(config_path)
+    result = BenchmarkRunner(benchmark_config).run()
+
+    payload = {
+        "seed": result.seed,
+        "dataset_type": result.dataset_type,
+        "n_samples": result.n_samples,
+        "n_anomalies": result.n_anomalies,
+        "report_json": str(result.report_json),
+        "report_markdown": str(result.report_markdown),
+        "detectors": [
+            {
+                "name": detector.name,
+                "precision": detector.precision,
+                "recall": detector.recall,
+                "f1": detector.f1,
+                "false_positives_per_hour": detector.false_positives_per_hour,
+            }
+            for detector in result.detectors
+        ],
     }
     print(json.dumps(payload, indent=2))  # noqa: T201
     return 0

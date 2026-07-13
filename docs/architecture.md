@@ -36,9 +36,19 @@ No detection logic or orchestration yet.
 - CLI `anomx detect --stream <name>`
 - Persistence in `scores` and `alerts` tables
 
-## Phase 3 Scope (next)
+## Phase 3 Scope (current)
 
-Benchmark framework with synthetic injection and reproducible metrics.
+- `AnomalyInjector` — point, contextual, drift anomalies (seed fixe)
+- `BenchmarkRunner` — évaluation solo + ensemble, protocole reproductible
+- Métriques : precision, recall, F1, FP/h, latence fit/predict
+- CLI `anomx benchmark --config config/benchmark.yaml`
+- Rapports auto-générés dans `reports/` (JSON + Markdown)
+
+**Compromis MVP** : métriques point-level (pas de fenêtre de tolérance event-level NAB). MAD performe mal sur drift/contextual — c'est documenté honnêtement dans le rapport.
+
+## Phase 4 Scope (next)
+
+Explicabilité SHAP + règles lisibles liées aux alertes.
 
 ## Data Flow (target)
 

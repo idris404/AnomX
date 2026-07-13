@@ -7,6 +7,7 @@ from typing import Any
 
 import yaml
 
+from anomx.benchmark.models import BenchmarkConfig
 from anomx.config.detect_models import DetectConfig
 from anomx.config.models import AppSettings, CsvBatchSourceConfig
 
@@ -33,3 +34,7 @@ def load_csv_source_config(path: Path) -> CsvBatchSourceConfig:
 
 def load_detect_config(path: Path) -> DetectConfig:
     return DetectConfig.model_validate(load_yaml(path))
+
+
+def load_benchmark_config(path: Path) -> BenchmarkConfig:
+    return BenchmarkConfig.model_validate(load_yaml(path))

@@ -12,7 +12,8 @@ AnomX is a **pluggable anomaly detection engine** (time series + tabular). Portf
 - **Phase 0: DONE** — interfaces, Postgres schema, FastAPI `/health`, Docker Compose, CI
 - **Phase 1: DONE** — CSV batch ingestion (Polars + Pandera), Postgres persistence, CLI `anomx ingest`
 - **Phase 2: DONE** — MAD + Isolation Forest detectors, ensemble, CLI `anomx detect`
-- **Next: Phase 3** — benchmark framework (injection synthétique, métriques P/R/F1)
+- **Phase 3: DONE** — benchmark synthétique reproductible, métriques P/R/F1, rapports JSON/Markdown
+- **Next: Phase 4** — explicabilité (SHAP, règles lisibles, panneau UI)
 
 ## Non-negotiable decisions (do not revert without explicit discussion)
 
