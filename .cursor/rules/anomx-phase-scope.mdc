@@ -23,7 +23,11 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 
 **Built**: MAD rule explanations, IF permutation attribution, `ExplanationBuilder`, explanations in `alerts.explanation` JSONB, CLI `anomx explain`, upsert on alert dedupe
 
-## Phase 5 (next) — API + Dashboard MVP
+## Phase 5 (done) — API + Dashboard MVP
+
+**Built**: FastAPI alert routes, `AlertService`, Streamlit dashboard, webhook/Slack alerters, ARQ worker, `POST /alerts/{id}/notify`
+
+## Phase 6 (next) — Connectors additionnels
 
 ## Demo datasets (do not cherry-pick metrics)
 

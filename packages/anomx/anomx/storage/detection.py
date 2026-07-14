@@ -124,7 +124,7 @@ class DetectionRepository:
         score: float,
         detector: str,
         explanation: dict[str, Any],
-    ) -> bool:
+    ) -> tuple[bool, UUID]:
         dedupe_key = f"{stream_id}:{observation_id}:{detector}"
         row = self._connection.execute(
             """
@@ -136,12 +136,51 @@ class DetectionRepository:
                 run_id = EXCLUDED.run_id,
                 score = EXCLUDED.score,
                 explanation = EXCLUDED.explanation
-            RETURNING (xmax = 0) AS inserted
+            RETURNING id, (xmax = 0) AS inserted
             """,
             (run_id, stream_id, observation_id, score, detector, Jsonb(explanation), dedupe_key),
         ).fetchone()
         assert row is not None
-        return bool(row["inserted"])
+        return bool(row["inserted"]), UUID(str(row["id"]))
+
+    def list_streams(self) -> list[dict[str, Any]]:
+        rows = self._connection.execute(
+            """
+            SELECT
+                s.id,
+                s.name,
+                COUNT(a.id) AS alert_count
+            FROM streams s
+            LEFT JOIN alerts a ON a.stream_id = s.id
+            GROUP BY s.id, s.name
+            ORDER BY s.name ASC
+            """,
+        ).fetchall()
+        return [dict(row) for row in rows]
+
+    def get_alert_by_id(self, alert_id: UUID) -> dict[str, Any] | None:
+        row = self._connection.execute(
+            """
+            SELECT
+                a.id,
+                a.run_id,
+                a.stream_id,
+                a.observation_id,
+                a.score,
+                a.detector,
+                a.explanation,
+                a.created_at,
+                s.name AS stream_name,
+                o.observed_at,
+                o.payload
+            FROM alerts a
+            JOIN streams s ON s.id = a.stream_id
+            LEFT JOIN observations o ON o.id = a.observation_id
+            WHERE a.id = %s
+            """,
+            (alert_id,),
+        ).fetchone()
+        return dict(row) if row is not None else None
 
     def count_alerts_for_run(self, run_id: UUID) -> int:
         row = self._connection.execute(

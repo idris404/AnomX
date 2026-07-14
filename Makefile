@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck api docker-up docker-down db-migrate sample-data ingest-demo clean help
+.PHONY: install test lint typecheck api worker dashboard docker-up docker-down db-migrate sample-data ingest-demo clean help
 
 help:
 	@echo AnomX — available targets:
@@ -7,6 +7,8 @@ help:
 	@echo   lint         Run ruff linter
 	@echo   typecheck    Run mypy strict on anomx core
 	@echo   api          Start FastAPI dev server on port 8000
+	@echo   worker       Start ARQ worker for async alert notifications
+	@echo   dashboard    Start Streamlit dashboard on port 8501
 	@echo   docker-up    Start Postgres and Redis containers
 	@echo   docker-down  Stop and remove containers
 	@echo   db-migrate   Apply Phase 1 Postgres migration (existing DBs)
@@ -15,6 +17,7 @@ help:
 	@echo   detect-demo  Ingest + run anomaly detection on sample_csv
 	@echo   benchmark    Run synthetic benchmark and write reports/
 	@echo   explain-demo Ingest + detect + show alert explanations
+	@echo   api-demo     explain-demo + curl-style API smoke hints
 	@echo   clean        Remove caches and build artifacts
 
 install:
@@ -24,13 +27,19 @@ test:
 	uv run pytest
 
 lint:
-	uv run ruff check packages/anomx services/api
+	uv run ruff check packages/anomx services/api services/dashboard
 
 typecheck:
 	uv run mypy packages/anomx/anomx
 
 api:
-	uv run --directory services/api uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+	uv run --no-sync --directory services/api uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+
+worker:
+	uv run --no-sync --directory services/api arq app.workers.settings.WorkerSettings
+
+dashboard:
+	uv run --no-sync --directory services/dashboard streamlit run app/main.py --server.port 8501
 
 docker-up:
 	docker compose up -d
@@ -59,6 +68,9 @@ benchmark:
 
 explain-demo: detect-demo
 	uv run anomx explain --stream sample_csv --limit 3
+
+api-demo: explain-demo
+	@echo Open http://localhost:8000/streams/sample_csv/alerts after `make api`
 
 clean:
 	if exist .pytest_cache rmdir /s /q .pytest_cache

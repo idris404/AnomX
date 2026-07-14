@@ -10,6 +10,7 @@ from fastapi import FastAPI
 
 from anomx import __version__ as anomx_version
 from app.config import Settings
+from app.routes.alerts import router as alerts_router
 from app.schemas import HealthResponse
 
 logger = structlog.get_logger(__name__)
@@ -33,6 +34,8 @@ app = FastAPI(
     version=settings.app_version,
     lifespan=lifespan,
 )
+
+app.include_router(alerts_router)
 
 
 @app.get("/health", response_model=HealthResponse, tags=["health"])

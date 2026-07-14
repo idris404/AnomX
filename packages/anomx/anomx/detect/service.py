@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Callable
 from uuid import UUID
 
 import structlog
@@ -32,8 +32,14 @@ class DetectResult(BaseModel):
 class DetectService:
     """Runs detector ensemble on ingested observations and persists alerts."""
 
-    def __init__(self, database: DatabaseSettings) -> None:
+    def __init__(
+        self,
+        database: DatabaseSettings,
+        *,
+        on_alert_created: Callable[[UUID], None] | None = None,
+    ) -> None:
         self._database = database
+        self._on_alert_created = on_alert_created
 
     def detect_stream(self, stream_name: str, config: DetectConfig) -> DetectResult:
         with postgres_connection(self._database.dsn) as connection:
@@ -125,7 +131,7 @@ class DetectService:
                             detector_scores=detector_scores,
                             ensemble_score=ensemble_score,
                         )
-                        inserted = repository.insert_alert(
+                        inserted, alert_id = repository.insert_alert(
                             detection_run_id,
                             stream_id,
                             observation_id,
@@ -135,6 +141,8 @@ class DetectService:
                         )
                         if inserted:
                             alerts_created += 1
+                        if self._on_alert_created is not None:
+                            self._on_alert_created(alert_id)
 
                 repository.complete_detection_run(
                     detection_run_id,

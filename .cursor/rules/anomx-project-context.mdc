@@ -14,7 +14,8 @@ AnomX is a **pluggable anomaly detection engine** (time series + tabular). Portf
 - **Phase 2: DONE** — MAD + Isolation Forest detectors, ensemble, CLI `anomx detect`
 - **Phase 3: DONE** — benchmark synthétique reproductible, métriques P/R/F1, rapports JSON/Markdown
 - **Phase 4: DONE** — explicabilité (règles MAD, attribution IF, CLI `anomx explain`)
-- **Next: Phase 5** — API alertes + dashboard Streamlit + alerting
+- **Phase 5: DONE** — API alertes, dashboard Streamlit, webhook/Slack + ARQ
+- **Next: Phase 6** — connecteurs additionnels (NAB, Online Retail II, Pagila)
 
 ## Non-negotiable decisions (do not revert without explicit discussion)
 

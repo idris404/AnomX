@@ -53,3 +53,39 @@ Expected explain output fields:
 - `feature_contributions` — weighted feature drivers (e.g. `value`)
 
 Re-run `make detect-demo` on an existing stream updates explanations in place (alert dedupe upsert).
+
+## Phase 5 Validation Checklist
+
+Prerequisite (once per env change):
+
+```powershell
+make install
+```
+
+Terminal 1:
+
+```powershell
+make docker-up
+make explain-demo
+make api
+```
+
+Terminal 2 (while API is running — use `--no-sync` via Makefile to avoid Windows file locks on `anomx.exe`):
+
+```powershell
+make dashboard
+```
+
+Open http://localhost:8501 in the browser.
+
+Optional async alerting (requires webhook/Slack enabled in `config/settings.yaml`):
+
+```powershell
+make worker
+curl -X POST "http://localhost:8000/alerts/<alert_id>/notify?async=true"
+```
+
+Expected:
+- API returns alerts with `summary`, `rules`, `feature_contributions`
+- Dashboard shows alert table + "Why this alert?" detail panel
+- Worker logs `notify_alert_complete` when alerters are enabled

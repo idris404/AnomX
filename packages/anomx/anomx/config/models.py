@@ -22,6 +22,29 @@ class DatabaseSettings(BaseModel):
         return f"postgresql://{self.user}:{self.password}@{self.host}:{self.port}/{self.db}"
 
 
+class WebhookAlertingSettings(BaseModel):
+    """Generic HTTP webhook alerter."""
+
+    enabled: bool = False
+    url: str | None = None
+    timeout_seconds: float = 10.0
+
+
+class SlackAlertingSettings(BaseModel):
+    """Slack incoming webhook alerter."""
+
+    enabled: bool = False
+    webhook_url: str | None = None
+    timeout_seconds: float = 10.0
+
+
+class AlertingSettings(BaseModel):
+    """Outbound alert notification settings."""
+
+    webhook: WebhookAlertingSettings = Field(default_factory=WebhookAlertingSettings)
+    slack: SlackAlertingSettings = Field(default_factory=SlackAlertingSettings)
+
+
 class CsvBatchSourceConfig(BaseModel):
     """YAML configuration for a CSV/Parquet batch source."""
 
@@ -46,3 +69,4 @@ class AppSettings(BaseModel):
     """Root application settings loaded from config/settings.yaml."""
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
+    alerting: AlertingSettings = Field(default_factory=AlertingSettings)

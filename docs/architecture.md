@@ -9,62 +9,32 @@ AnomX is a pluggable anomaly detection engine. The codebase follows a strict **l
 - **`services/dashboard/`** — Streamlit UI (Phase 5)
 - **`services/orchestrator/`** — Dagster assets (Phase 7)
 
-## Phase 0 Scope
+## Phase 0–4 (done)
 
-Phase 0 established foundations only:
+See git history / prior docs for ingestion, detection, benchmark, and explainability scopes.
 
-- Protocol interfaces (`Source`, `Sink`, `Detector`, `Alerter`)
-- PostgreSQL schema (streams, runs, observations, scores, alerts)
-- Docker Compose (PostgreSQL 16 + Redis 7)
-- FastAPI health endpoint
-- CI pipeline (ruff + mypy strict + pytest)
+## Phase 5 Scope (current)
 
-## Phase 1 Scope
+API + dashboard MVP + async alerting:
 
-- `CsvBatchSource` — Polars read + Pandera validation
-- Postgres persistence via `runs` + `observations` (maps to ingestion_runs / raw_events)
-- CLI `anomx ingest --config config/sources/<source>.yaml`
-- Idempotent re-ingestion via file content hash
+- **FastAPI routes** — `GET /streams`, `GET /streams/{name}/alerts`, `GET /alerts/{id}`, `POST /alerts/{id}/notify`
+- **`AlertService`** — read-side queries with full explanation payloads
+- **`AlertingService`** — webhook + Slack incoming webhook alerters
+- **ARQ worker** — async notification dispatch via Redis (already in Docker Compose)
+- **Streamlit dashboard** — alert table + **"Why this alert?"** panel (summary, rules, contributions, per-detector breakdown)
 
-## Phase 2 Scope
+**Compromis MVP** : dashboard consomme l'API REST (pas de WebSocket live) ; alerting activé via `config/settings.yaml` ; pas de RBAC/auth sur l'API.
 
-- `MADDetector` — robust univariate baseline (MAD z-score)
-- `IsolationForestDetector` — multivariate sklearn baseline
-- `EnsembleDetector` — weighted fusion + percentile calibration
-- CLI `anomx detect --stream <name>`
-- Persistence in `scores` and `alerts` tables
+## Phase 6 Scope (next)
 
-## Phase 3 Scope
-
-- `AnomalyInjector` — point, contextual, drift anomalies (seed fixe)
-- `BenchmarkRunner` — évaluation solo + ensemble, protocole reproductible
-- Métriques : precision, recall, F1, FP/h, latence fit/predict
-- CLI `anomx benchmark --config config/benchmark.yaml`
-- Rapports auto-générés dans `reports/` (JSON + Markdown)
-
-**Compromis MVP** : métriques point-level (pas de fenêtre de tolérance event-level NAB). MAD performe mal sur drift/contextual — c'est documenté honnêtement dans le rapport.
-
-## Phase 4 Scope (current)
-
-Human-defensible alert explanations stored in `alerts.explanation` JSONB:
-
-- **`explain/mad_rules.py`** — rule-based MAD explanations (median, MAD, robust z, threshold)
-- **`explain/if_attribution.py`** — permutation-based feature attribution for Isolation Forest
-- **`explain/builder.py`** — composite ensemble explanation (summary, rules, per-detector contributions)
-- **`ExplainService`** + CLI `anomx explain --stream <name> --limit N`
-- Integrated into `DetectService` at alert creation time
-
-**Compromis MVP** : pas de SHAP (packaging Windows/Python 3.11 fragile) — attribution par permutation vs médianes de la fenêtre de fit, output compatible avec le panneau UI Phase 5. Pas de résumé LLM.
-
-## Phase 5 Scope (next)
-
-FastAPI routes for alerts, Streamlit dashboard with "Why this alert?" panel, webhook/Slack alerting, ARQ async jobs.
+Additional connectors (NAB, Online Retail II), Pagila poll source.
 
 ## Data Flow (target)
 
 ```
 Connectors → Ingestion → Detection → Scoring → Storage → API / Dashboard / Alerting
                                               ↘ Explain (on alert)
+                                                              ↘ ARQ notify
 ```
 
 See `docs/decisions/` for Architecture Decision Records.

@@ -11,3 +11,11 @@ database:
   user: anomx
   password: anomx
   db: anomx
+
+alerting:
+  webhook:
+    enabled: false
+    url: null
+  slack:
+    enabled: false
+    webhook_url: null
