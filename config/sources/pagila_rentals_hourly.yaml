@@ -1,0 +1,13 @@
+# Pagila-style hourly rental counts (requires Pagila DB on localhost:5432)
+# MVP compromise: use postgres_observations_hourly.yaml against AnomX Postgres instead.
+name: pagila_rentals_hourly
+source_type: postgres_query
+timestamp_column: observed_at
+value_column: value
+query: |
+  SELECT
+      date_trunc('hour', rental_date) AS observed_at,
+      count(*)::double precision AS value
+  FROM rental
+  GROUP BY 1
+  ORDER BY 1

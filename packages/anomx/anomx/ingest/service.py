@@ -12,12 +12,14 @@ from uuid import UUID
 import structlog
 from pydantic import BaseModel, Field
 
-from anomx.config.models import CsvBatchSourceConfig, DatabaseSettings
-from anomx.connectors.csv_batch import CsvBatchSource
+from anomx.config.models import CsvBatchSourceConfig, DatabaseSettings, SourceConfig
+from anomx.connectors.factory import build_source
 from anomx.storage.ingestion import IngestionRepository
 from anomx.storage.postgres import postgres_connection
 
 logger = structlog.get_logger(__name__)
+
+_FILE_SOURCE_TYPES = {"csv_batch", "nab_batch", "online_retail_batch"}
 
 
 class IngestResult(BaseModel):
@@ -40,15 +42,8 @@ class IngestService:
     def __init__(self, database: DatabaseSettings) -> None:
         self._database = database
 
-    def ingest_csv_batch(self, config: CsvBatchSourceConfig) -> IngestResult:
-        content_hash = file_content_hash(config.path)
-        source = CsvBatchSource(
-            path=config.path,
-            timestamp_column=config.timestamp_column,
-            value_column=config.value_column,
-            file_format=config.format,
-            include_columns=config.include_columns,
-        )
+    def ingest(self, config: SourceConfig) -> IngestResult:
+        source = build_source(config, database=self._database)
 
         with postgres_connection(self._database.dsn) as connection:
             repository = IngestionRepository(connection)
@@ -58,38 +53,29 @@ class IngestService:
                 config=config.model_dump(mode="json"),
             )
 
-            existing_run = repository.find_completed_run_by_content_hash(stream_id, content_hash)
-            if existing_run is not None:
-                run_id = UUID(str(existing_run["id"]))
-                metadata = existing_run["metadata"]
-                row_count = int(metadata.get("row_count", 0)) if isinstance(metadata, dict) else 0
-                logger.info(
-                    "ingest_skipped_idempotent",
-                    stream=config.name,
-                    run_id=str(run_id),
-                    content_hash=content_hash,
-                )
-                return IngestResult(
-                    run_id=run_id,
-                    stream_id=stream_id,
-                    stream_name=config.name,
-                    records_read=row_count,
-                    records_written=0,
-                    content_hash=content_hash,
-                    skipped=True,
-                )
+            if config.source_type in _FILE_SOURCE_TYPES:
+                content_hash = _file_content_hash(config)
+                existing_run = repository.find_completed_run_by_content_hash(stream_id, content_hash)
+                if existing_run is not None:
+                    return _skipped_result(existing_run, stream_id, config.name, content_hash)
+                records = source.read()
+            else:
+                records = source.read()
+                content_hash = records_content_hash(records)
+                existing_run = repository.find_completed_run_by_content_hash(stream_id, content_hash)
+                if existing_run is not None:
+                    return _skipped_result(existing_run, stream_id, config.name, content_hash)
 
             run_id = repository.create_run(
                 stream_id=stream_id,
                 metadata={
                     "content_hash": content_hash,
-                    "source_path": str(config.path),
                     "source_type": config.source_type,
+                    **_source_run_metadata(config),
                 },
             )
 
             try:
-                records = source.read()
                 prepared = [
                     {
                         "observed_at": record["observed_at"],
@@ -105,7 +91,10 @@ class IngestService:
                 written = repository.insert_observations(run_id, stream_id, prepared)
                 repository.complete_run(
                     run_id,
-                    {"content_hash": content_hash, "source_path": str(config.path)},
+                    {
+                        "content_hash": content_hash,
+                        **_source_run_metadata(config),
+                    },
                     row_count=written,
                 )
             except Exception as exc:
@@ -130,9 +119,69 @@ class IngestService:
                 skipped=False,
             )
 
+    def ingest_csv_batch(self, config: CsvBatchSourceConfig) -> IngestResult:
+        return self.ingest(config)
+
+
+def _skipped_result(
+    existing_run: dict[str, Any],
+    stream_id: UUID,
+    stream_name: str,
+    content_hash: str,
+) -> IngestResult:
+    run_id = UUID(str(existing_run["id"]))
+    metadata = existing_run["metadata"]
+    row_count = int(metadata.get("row_count", 0)) if isinstance(metadata, dict) else 0
+    logger.info(
+        "ingest_skipped_idempotent",
+        stream=stream_name,
+        run_id=str(run_id),
+        content_hash=content_hash,
+    )
+    return IngestResult(
+        run_id=run_id,
+        stream_id=stream_id,
+        stream_name=stream_name,
+        records_read=row_count,
+        records_written=0,
+        content_hash=content_hash,
+        skipped=True,
+    )
+
+
+def _source_run_metadata(config: SourceConfig) -> dict[str, Any]:
+    if config.source_type in _FILE_SOURCE_TYPES:
+        return {"source_path": str(config.path)}
+    if config.source_type == "postgres_query":
+        return {"query": config.query}
+    return {}
+
+
+def _file_content_hash(config: SourceConfig) -> str:
+    path = getattr(config, "path", None)
+    if path is None:
+        msg = "File source config missing path"
+        raise ValueError(msg)
+    return file_content_hash(path)
+
 
 def file_content_hash(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def records_content_hash(records: list[dict[str, Any]]) -> str:
+    canonical = json.dumps(
+        [
+            {
+                "observed_at": record["observed_at"].isoformat(),
+                "payload": record["payload"],
+            }
+            for record in records
+        ],
+        sort_keys=True,
+        default=str,
+    )
+    return hashlib.sha256(canonical.encode()).hexdigest()
 
 
 def row_fingerprint(stream_id: UUID, observed_at: datetime, payload: dict[str, Any]) -> str:

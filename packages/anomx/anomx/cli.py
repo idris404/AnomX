@@ -13,8 +13,8 @@ from anomx import __version__
 from anomx.config.loader import (
     load_app_settings,
     load_benchmark_config,
-    load_csv_source_config,
     load_detect_config,
+    load_source_config,
 )
 from anomx.benchmark.runner import BenchmarkRunner
 from anomx.detect.service import DetectService
@@ -134,10 +134,10 @@ def main(argv: list[str] | None = None) -> int:
 
 
 def _run_ingest(config_path: Path, settings_path: Path) -> int:
-    source_config = load_csv_source_config(config_path)
+    source_config = load_source_config(config_path)
     app_settings = load_app_settings(settings_path)
     service = IngestService(database=app_settings.database)
-    result = service.ingest_csv_batch(source_config)
+    result = service.ingest(source_config)
 
     payload = {
         "run_id": str(result.run_id),

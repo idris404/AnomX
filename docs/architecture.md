@@ -6,30 +6,35 @@ AnomX is a pluggable anomaly detection engine. The codebase follows a strict **l
 
 - **`packages/anomx/`** — publishable Python library with zero web/orchestration dependencies
 - **`services/api/`** — thin FastAPI layer that depends on `anomx`
-- **`services/dashboard/`** — Streamlit UI (Phase 5)
+- **`services/dashboard/`** — Streamlit UI
 - **`services/orchestrator/`** — Dagster assets (Phase 7)
 
-## Phase 0–4 (done)
+## Phase 5 (done)
 
-See git history / prior docs for ingestion, detection, benchmark, and explainability scopes.
+API alert routes, Streamlit dashboard, webhook/Slack alerting, ARQ worker.
 
-## Phase 5 Scope (current)
+## Phase 6 Scope (current)
 
-API + dashboard MVP + async alerting:
+Additional connectors via `Source` protocol + `build_source()` factory:
 
-- **FastAPI routes** — `GET /streams`, `GET /streams/{name}/alerts`, `GET /alerts/{id}`, `POST /alerts/{id}/notify`
-- **`AlertService`** — read-side queries with full explanation payloads
-- **`AlertingService`** — webhook + Slack incoming webhook alerters
-- **ARQ worker** — async notification dispatch via Redis (already in Docker Compose)
-- **Streamlit dashboard** — alert table + **"Why this alert?"** panel (summary, rules, contributions, per-detector breakdown)
+| Flux | Connector | `source_type` | Purpose |
+|------|-----------|---------------|---------|
+| A | `NabBatchSource` | `nab_batch` | NAB labeled CSV + anomaly windows in payload |
+| B | `OnlineRetailBatchSource` | `online_retail_batch` | Daily revenue/quantity aggregation |
+| C | `PostgresQuerySource` | `postgres_query` | SQL snapshot poll (Pagila-style queries) |
 
-**Compromis MVP** : dashboard consomme l'API REST (pas de WebSocket live) ; alerting activé via `config/settings.yaml` ; pas de RBAC/auth sur l'API.
+CLI unchanged: `anomx ingest --config config/sources/<source>.yaml`
 
-## Phase 6 Scope (next)
+**Compromis MVP** :
+- NAB labels from `combined_windows.json` (not full NAB eval pipeline)
+- Online Retail = synthetic sample script (full UCI file optional offline)
+- Pagila = generic SQL query; demo uses AnomX Postgres replay unless Pagila DB is loaded
 
-Additional connectors (NAB, Online Retail II), Pagila poll source.
+## Phase 7 Scope (next)
 
-## Data Flow (target)
+Dagster orchestration assets.
+
+## Data Flow
 
 ```
 Connectors → Ingestion → Detection → Scoring → Storage → API / Dashboard / Alerting

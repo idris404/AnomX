@@ -1,0 +1,8 @@
+name: nab_cpu_utilization
+source_type: nab_batch
+path: data/nab/cpu_utilization_asg_misconfiguration.csv
+dataset_name: cpu_utilization_asg_misconfiguration
+timestamp_column: timestamp
+value_column: value
+labels_path: data/nab/combined_windows.json
+labels_key: realKnownCause/cpu_utilization_asg_misconfiguration.csv

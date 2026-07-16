@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, Field, field_validator
 
@@ -63,6 +63,66 @@ class CsvBatchSourceConfig(BaseModel):
             msg = f"Source file not found: {value}"
             raise ValueError(msg)
         return value
+
+
+class NabBatchSourceConfig(BaseModel):
+    """YAML configuration for a NAB labeled CSV source."""
+
+    name: str = Field(min_length=1)
+    source_type: Literal["nab_batch"]
+    path: Path
+    dataset_name: str = Field(min_length=1)
+    timestamp_column: str = "timestamp"
+    value_column: str = "value"
+    labels_path: Path | None = None
+    labels_key: str | None = None
+
+    @field_validator("path")
+    @classmethod
+    def path_must_exist(cls, value: Path) -> Path:
+        if not value.exists():
+            msg = f"Source file not found: {value}"
+            raise ValueError(msg)
+        return value
+
+
+class OnlineRetailBatchSourceConfig(BaseModel):
+    """YAML configuration for Online Retail II daily aggregation."""
+
+    name: str = Field(min_length=1)
+    source_type: Literal["online_retail_batch"]
+    path: Path
+    timestamp_column: str = "InvoiceDate"
+    quantity_column: str = "Quantity"
+    price_column: str = "UnitPrice"
+    aggregate: Literal["daily_revenue", "daily_quantity"] = "daily_revenue"
+
+    @field_validator("path")
+    @classmethod
+    def path_must_exist(cls, value: Path) -> Path:
+        if not value.exists():
+            msg = f"Source file not found: {value}"
+            raise ValueError(msg)
+        return value
+
+
+class PostgresQuerySourceConfig(BaseModel):
+    """YAML configuration for a PostgreSQL snapshot query source."""
+
+    name: str = Field(min_length=1)
+    source_type: Literal["postgres_query"]
+    query: str = Field(min_length=1)
+    timestamp_column: str = Field(min_length=1)
+    value_column: str = Field(min_length=1)
+
+
+SourceConfig = Annotated[
+    CsvBatchSourceConfig
+    | NabBatchSourceConfig
+    | OnlineRetailBatchSourceConfig
+    | PostgresQuerySourceConfig,
+    Field(discriminator="source_type"),
+]
 
 
 class AppSettings(BaseModel):

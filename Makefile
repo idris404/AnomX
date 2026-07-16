@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck api worker dashboard docker-up docker-down db-migrate sample-data ingest-demo clean help
+.PHONY: install test lint typecheck api worker dashboard docker-up docker-down db-migrate sample-data ingest-demo clean help nab-data retail-data nab-demo retail-demo postgres-demo
 
 help:
 	@echo AnomX — available targets:
@@ -17,6 +17,11 @@ help:
 	@echo   detect-demo  Ingest + run anomaly detection on sample_csv
 	@echo   benchmark    Run synthetic benchmark and write reports/
 	@echo   explain-demo Ingest + detect + show alert explanations
+	@echo   nab-data       Download NAB sample CSV + labels
+	@echo   retail-data    Generate Online Retail II-like sample CSV
+	@echo   nab-demo       Download NAB sample + ingest + detect
+	@echo   retail-demo    Generate retail sample + ingest + detect
+	@echo   postgres-demo  Ingest hourly aggregate from sample_csv observations
 	@echo   api-demo     explain-demo + curl-style API smoke hints
 	@echo   clean        Remove caches and build artifacts
 
@@ -71,6 +76,24 @@ explain-demo: detect-demo
 
 api-demo: explain-demo
 	@echo Open http://localhost:8000/streams/sample_csv/alerts after `make api`
+
+nab-data:
+	uv run python scripts/download_nab_sample.py
+
+retail-data:
+	uv run python scripts/generate_online_retail_sample.py
+
+nab-demo: nab-data
+	uv run anomx ingest --config config/sources/nab_cpu_utilization.yaml
+	uv run anomx detect --stream nab_cpu_utilization --config config/detectors.yaml
+
+retail-demo: retail-data
+	uv run anomx ingest --config config/sources/online_retail_daily.yaml
+	uv run anomx detect --stream online_retail_daily --config config/detectors.yaml
+
+postgres-demo: explain-demo
+	uv run anomx ingest --config config/sources/postgres_observations_hourly.yaml
+	uv run anomx detect --stream postgres_observations_hourly --config config/detectors.yaml
 
 clean:
 	if exist .pytest_cache rmdir /s /q .pytest_cache

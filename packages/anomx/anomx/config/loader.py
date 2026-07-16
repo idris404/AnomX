@@ -3,13 +3,16 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeVar
 
 import yaml
+from pydantic import TypeAdapter
 
 from anomx.benchmark.models import BenchmarkConfig
 from anomx.config.detect_models import DetectConfig
-from anomx.config.models import AppSettings, CsvBatchSourceConfig
+from anomx.config.models import AppSettings, CsvBatchSourceConfig, SourceConfig
+
+T = TypeVar("T")
 
 
 def load_yaml(path: Path) -> dict[str, Any]:
@@ -28,8 +31,16 @@ def load_app_settings(path: Path | None = None) -> AppSettings:
     return AppSettings.model_validate(load_yaml(config_path))
 
 
+def load_source_config(path: Path) -> SourceConfig:
+    return TypeAdapter(SourceConfig).validate_python(load_yaml(path))
+
+
 def load_csv_source_config(path: Path) -> CsvBatchSourceConfig:
-    return CsvBatchSourceConfig.model_validate(load_yaml(path))
+    config = load_source_config(path)
+    if not isinstance(config, CsvBatchSourceConfig):
+        msg = f"Expected csv_batch source config: {path}"
+        raise ValueError(msg)
+    return config
 
 
 def load_detect_config(path: Path) -> DetectConfig:

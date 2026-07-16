@@ -1,0 +1,14 @@
+name: postgres_observations_hourly
+source_type: postgres_query
+timestamp_column: observed_at
+value_column: value
+# Replays sample_csv at minute resolution (~200 rows) so detect meets the >=10 minimum.
+# MVP compromise: Pagila-style SQL poll against AnomX Postgres instead of a live Pagila DB.
+query: |
+  SELECT
+      o.observed_at AS observed_at,
+      (o.payload->>'value')::double precision AS value
+  FROM observations o
+  JOIN streams s ON s.id = o.stream_id
+  WHERE s.name = 'sample_csv'
+  ORDER BY o.observed_at ASC, o.id ASC

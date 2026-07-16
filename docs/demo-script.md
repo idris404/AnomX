@@ -89,3 +89,21 @@ Expected:
 - API returns alerts with `summary`, `rules`, `feature_contributions`
 - Dashboard shows alert table + "Why this alert?" detail panel
 - Worker logs `notify_alert_complete` when alerters are enabled
+
+## Phase 6 Validation Checklist
+
+```powershell
+make nab-data
+make nab-demo
+# attendu : stream nab_cpu_utilization ingéré + detect
+
+make retail-data
+make retail-demo
+# attendu : stream online_retail_daily (120 jours agrégés)
+
+make explain-demo
+make postgres-demo
+# attendu : stream postgres_observations_hourly (~200 points replay depuis sample_csv)
+```
+
+Inspect payloads in Postgres — NAB rows should include `label` and `dataset` in `observations.payload`.

@@ -1,0 +1,7 @@
+name: online_retail_daily
+source_type: online_retail_batch
+path: data/online_retail/sample.csv
+timestamp_column: InvoiceDate
+quantity_column: Quantity
+price_column: UnitPrice
+aggregate: daily_revenue

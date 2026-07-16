@@ -27,7 +27,11 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 
 **Built**: FastAPI alert routes, `AlertService`, Streamlit dashboard, webhook/Slack alerters, ARQ worker, `POST /alerts/{id}/notify`
 
-## Phase 6 (next) — Connectors additionnels
+## Phase 6 (done) — Connecteurs additionnels
+
+**Built**: `NabBatchSource`, `OnlineRetailBatchSource`, `PostgresQuerySource`, `build_source()` factory, `load_source_config()`, demo scripts + YAML configs
+
+## Phase 7 (next) — Dagster orchestration
 
 ## Demo datasets (do not cherry-pick metrics)
 
