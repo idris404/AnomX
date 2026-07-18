@@ -74,7 +74,9 @@ kafka-demo: sample-data docker-up
 
 mlops-demo: detect-demo
 	uv run anomx runs --stream sample_csv --limit 5
-	@echo Tracking store: ./mlruns/mlflow.db (optional UI: uv pip install mlflow && uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db)
+	@echo Tracking store: ./mlruns/mlflow.db
+	@echo Optional MLflow UI: uv pip install mlflow
+	@echo Then run: uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db
 
 docker-up:
 	docker compose up -d
