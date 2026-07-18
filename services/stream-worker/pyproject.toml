@@ -1,0 +1,22 @@
+[project]
+name = "anomx-stream-worker"
+version = "0.1.0"
+description = "AnomX Kafka/Redpanda stream ingestion worker"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    "anomx",
+    "structlog>=24.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv.sources]
+anomx = { workspace = true }
+
+[tool.hatch.build.targets.wheel]
+packages = ["anomx_stream_worker"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

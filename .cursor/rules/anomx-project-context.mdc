@@ -17,7 +17,8 @@ AnomX is a **pluggable anomaly detection engine** (time series + tabular). Portf
 - **Phase 5: DONE** — API alertes, dashboard Streamlit, webhook/Slack + ARQ
 - **Phase 6: DONE** — connecteurs NAB, Online Retail II, Postgres query (Pagila-style)
 - **Phase 7: DONE** — orchestration Dagster (assets ingest → detect)
-- **Next: Phase 8** — streaming / Kafka / Debezium
+- **Phase 8: DONE** — streaming Redpanda/Kafka JSON ingest + stream worker
+- **Next: Phase 9** — MLOps / observability
 
 ## Non-negotiable decisions (do not revert without explicit discussion)
 

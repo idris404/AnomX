@@ -7,12 +7,14 @@ from typing import Any
 from anomx.config.models import (
     CsvBatchSourceConfig,
     DatabaseSettings,
+    KafkaJsonSourceConfig,
     NabBatchSourceConfig,
     OnlineRetailBatchSourceConfig,
     PostgresQuerySourceConfig,
     SourceConfig,
 )
 from anomx.connectors.csv_batch import CsvBatchSource
+from anomx.connectors.kafka_json import KafkaJsonSource
 from anomx.connectors.nab_batch import NabBatchSource
 from anomx.connectors.online_retail import OnlineRetailBatchSource
 from anomx.connectors.postgres_query import PostgresQuerySource
@@ -53,6 +55,15 @@ def build_source(config: SourceConfig, *, database: DatabaseSettings | None = No
             query=config.query,
             timestamp_column=config.timestamp_column,
             value_column=config.value_column,
+        )
+    if isinstance(config, KafkaJsonSourceConfig):
+        return KafkaJsonSource(
+            bootstrap_servers=config.bootstrap_servers,
+            topic=config.topic,
+            group_id=config.group_id,
+            timestamp_field=config.timestamp_field,
+            value_field=config.value_field,
+            auto_offset_reset=config.auto_offset_reset,
         )
     msg = f"Unsupported source config: {config!r}"
     raise ValueError(msg)

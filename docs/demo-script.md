@@ -133,3 +133,21 @@ Verify in Postgres or CLI:
 ```powershell
 uv run anomx explain --stream sample_csv --limit 3
 ```
+
+## Phase 8 Validation Checklist
+
+```powershell
+make docker-up
+make kafka-demo
+# attendu : 200 messages published, stream worker ingests + detect, explain JSON
+```
+
+Re-run with a fresh consumer group if the topic was already consumed:
+
+```powershell
+uv run python scripts/publish_sample_to_kafka.py
+uv run --directory services/stream-worker python -m anomx_stream_worker.main --detect --group-id anomx-demo-v2
+uv run anomx explain --stream kafka_sample --limit 3
+```
+
+Redpanda UI/console: broker on `127.0.0.1:19092`. MVP uses JSON on topic `anomx.observations` — Debezium CDC is the production path for Flux C (Pagila).

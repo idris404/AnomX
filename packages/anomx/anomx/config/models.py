@@ -116,11 +116,25 @@ class PostgresQuerySourceConfig(BaseModel):
     value_column: str = Field(min_length=1)
 
 
+class KafkaJsonSourceConfig(BaseModel):
+    """YAML configuration for a Kafka/Redpanda JSON topic consumer."""
+
+    name: str = Field(min_length=1)
+    source_type: Literal["kafka_json"]
+    bootstrap_servers: str = "127.0.0.1:19092"
+    topic: str = Field(min_length=1)
+    group_id: str = "anomx-ingest"
+    timestamp_field: str = "timestamp"
+    value_field: str = "value"
+    auto_offset_reset: Literal["earliest", "latest"] = "earliest"
+
+
 SourceConfig = Annotated[
     CsvBatchSourceConfig
     | NabBatchSourceConfig
     | OnlineRetailBatchSourceConfig
-    | PostgresQuerySourceConfig,
+    | PostgresQuerySourceConfig
+    | KafkaJsonSourceConfig,
     Field(discriminator="source_type"),
 ]
 
