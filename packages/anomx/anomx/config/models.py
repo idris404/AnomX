@@ -49,7 +49,7 @@ class MlflowSettings(BaseModel):
     """MLflow experiment tracking settings (Phase 9)."""
 
     enabled: bool = False
-    tracking_uri: str = "file:./mlruns"
+    tracking_uri: str = "sqlite:///mlruns/mlflow.db"
     experiment_name: str = "anomx-detect"
 
 

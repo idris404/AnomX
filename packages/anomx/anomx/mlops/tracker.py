@@ -37,7 +37,12 @@ class MlflowDetectTracker:
 
         import mlflow
 
-        mlflow.set_tracking_uri(self._settings.tracking_uri)
+        tracking_uri = self._settings.tracking_uri
+        if tracking_uri.startswith("sqlite:///"):
+            db_path = tracking_uri.removeprefix("sqlite:///")
+            Path(db_path).parent.mkdir(parents=True, exist_ok=True)
+
+        mlflow.set_tracking_uri(tracking_uri)
         mlflow.set_experiment(self._settings.experiment_name)
 
         run_name = f"detect-{result.stream_name}-{str(result.run_id)[:8]}"

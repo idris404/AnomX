@@ -10,7 +10,7 @@ Detection runs already persist scores and alerts in Postgres, but there is no ex
 
 ## Decision
 
-1. **MLflow** — log each `DetectService` run (params, metrics, detector YAML artifact) to a local file store (`./mlruns`).
+1. **MLflow** — log each `DetectService` run (params, metrics, detector YAML artifact) to a local SQLite store (`./mlruns/mlflow.db`).
 2. **Run history API/CLI** — expose `GET /streams/{name}/runs` and `anomx runs list`.
 3. **Prometheus** — expose `/metrics` on the FastAPI service with request counters and latency histogram.
 

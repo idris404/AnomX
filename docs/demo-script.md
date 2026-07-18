@@ -160,7 +160,7 @@ make mlops-demo
 
 # optional — full mlflow package for the UI (tracking uses mlflow-skinny)
 uv pip install mlflow
-uv run mlflow ui --backend-store-uri file:./mlruns
+uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db
 # attendu : experiment anomx-detect with latest run metrics
 
 make api
