@@ -35,7 +35,7 @@ Event-driven ingestion via Redpanda/Kafka (ADR 004):
 
 **Compromis MVP:** micro-batch CLI, pas Debezium ni exactly-once — remplace le poll SQL Phase 6 pour Flux C.
 
-## Phase 9 Scope (current)
+## Phase 9 Scope (done)
 
 MLOps + observability (ADR 005):
 
@@ -46,11 +46,20 @@ MLOps + observability (ADR 005):
 | `GET /streams/{name}/runs` | Operational visibility |
 | `GET /metrics` | Prometheus scrape endpoint |
 
-**Compromis MVP:** file-based MLflow, pas de model registry ni Grafana — suffisant pour démo portfolio.
+**Compromis MVP:** SQLite MLflow, pas de model registry ni Grafana — suffisant pour démo portfolio.
 
-## Phase 10 Scope (next)
+## Phase 10 Scope (current)
 
-Dashboard polish (optional Next.js), production hardening.
+Dashboard polish + production hardening (ADR 006):
+
+| Component | Role |
+|-----------|------|
+| Streamlit tabs | Overview (health, streams), Alerts, Runs |
+| `GET /health/ready` | Postgres + Redis readiness probe |
+| `GET /health` | Liveness only (unchanged) |
+| README + LICENSE | Portfolio-ready documentation |
+
+**Compromis MVP:** Streamlit (not Next.js), no auth/TLS — readiness probes are the production hook for K8s.
 
 ## Data Flow
 

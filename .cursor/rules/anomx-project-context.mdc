@@ -19,7 +19,8 @@ AnomX is a **pluggable anomaly detection engine** (time series + tabular). Portf
 - **Phase 7: DONE** — orchestration Dagster (assets ingest → detect)
 - **Phase 8: DONE** — streaming Redpanda/Kafka JSON ingest + stream worker
 - **Phase 9: DONE** — MLflow tracking, run history API, Prometheus metrics
-- **Next: Phase 10** — dashboard polish / production hardening
+- **Phase 10: DONE** — dashboard polish (Overview/Alerts/Runs), readiness probes
+- **Portfolio complete** — Phases 0→10; optional future: Next.js UI, model registry
 
 ## Non-negotiable decisions (do not revert without explicit discussion)
 

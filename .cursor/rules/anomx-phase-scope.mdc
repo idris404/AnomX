@@ -43,7 +43,9 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 
 **Built**: MLflow detect tracking, `RunService`, `GET /streams/{name}/runs`, Prometheus `/metrics`, `make mlops-demo`
 
-## Phase 10 (next) — Polish
+## Phase 10 (done) — Polish
+
+**Built**: Streamlit tabs (Overview/Alerts/Runs), `GET /health/ready`, README refresh, MIT LICENSE, `make polish-demo`
 
 ## Demo datasets (do not cherry-pick metrics)
 

@@ -7,14 +7,16 @@ from contextlib import asynccontextmanager
 
 import structlog
 from fastapi import FastAPI, Request, Response
+from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
 from anomx import __version__ as anomx_version
 from app.config import Settings
+from app.health import check_postgres, check_redis
 from app.metrics import HTTP_REQUEST_LATENCY_SECONDS, HTTP_REQUESTS_TOTAL
 from app.routes.alerts import router as alerts_router
 from app.routes.runs import router as runs_router
-from app.schemas import HealthResponse
+from app.schemas import DependencyCheck, HealthResponse, ReadinessResponse
 
 logger = structlog.get_logger(__name__)
 settings = Settings()
@@ -59,6 +61,34 @@ async def health() -> HealthResponse:
         service="anomx-api",
         version=settings.app_version,
     )
+
+
+@app.get("/health/ready", response_model=ReadinessResponse, tags=["health"])
+async def health_ready() -> JSONResponse | ReadinessResponse:
+    """Readiness probe — confirms Postgres and Redis are reachable."""
+    postgres = check_postgres(settings.postgres_dsn)
+    redis_check = check_redis(settings.redis_url)
+    checks = {
+        "postgres": DependencyCheck(
+            status=postgres.status,
+            latency_ms=postgres.latency_ms,
+            detail=postgres.detail,
+        ),
+        "redis": DependencyCheck(
+            status=redis_check.status,
+            latency_ms=redis_check.latency_ms,
+            detail=redis_check.detail,
+        ),
+    }
+    all_ok = all(check.status == "ok" for check in checks.values())
+    payload = ReadinessResponse(
+        status="ready" if all_ok else "degraded",
+        service="anomx-api",
+        version=settings.app_version,
+        checks=checks,
+    )
+    status_code = 200 if all_ok else 503
+    return JSONResponse(status_code=status_code, content=payload.model_dump())
 
 
 @app.get("/metrics", tags=["observability"])

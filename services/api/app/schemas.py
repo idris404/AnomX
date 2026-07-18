@@ -16,6 +16,21 @@ class HealthResponse(BaseModel):
     version: str = Field(examples=["0.1.0"])
 
 
+class DependencyCheck(BaseModel):
+    status: str = Field(examples=["ok"])
+    latency_ms: float | None = None
+    detail: str | None = None
+
+
+class ReadinessResponse(BaseModel):
+    """Readiness probe — confirms dependencies are reachable."""
+
+    status: str = Field(examples=["ready", "degraded"])
+    service: str = Field(examples=["anomx-api"])
+    version: str = Field(examples=["0.1.0"])
+    checks: dict[str, DependencyCheck]
+
+
 class StreamListResponse(BaseModel):
     streams: list[StreamSummary]
 

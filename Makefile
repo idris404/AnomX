@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck api worker dashboard orchestrator stream-worker docker-up docker-down db-migrate sample-data ingest-demo clean help nab-data retail-data nab-demo retail-demo postgres-demo orchestrator-demo kafka-demo
+.PHONY: install test lint typecheck api worker dashboard orchestrator stream-worker docker-up docker-down db-migrate sample-data ingest-demo clean help nab-data retail-data nab-demo retail-demo postgres-demo orchestrator-demo kafka-demo polish-demo
 
 help:
 	@echo AnomX — available targets:
@@ -28,6 +28,7 @@ help:
 	@echo   orchestrator-demo Materialize sample_csv pipeline via Dagster job
 	@echo   kafka-demo     Publish sample CSV to Redpanda + ingest + detect
 	@echo   mlops-demo     Detect + MLflow tracking + run history
+	@echo   polish-demo    Phase 10 demo (mlops + dashboard hints)
 	@echo   api-demo     explain-demo + curl-style API smoke hints
 	@echo   clean        Remove caches and build artifacts
 
@@ -77,6 +78,13 @@ mlops-demo: detect-demo
 	@echo Tracking store: ./mlruns/mlflow.db
 	@echo Optional MLflow UI: uv pip install mlflow
 	@echo Then run: uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db
+
+polish-demo: mlops-demo
+	@echo Phase 10 — start API and dashboard in separate terminals:
+	@echo   make api
+	@echo   make dashboard
+	@echo Open http://127.0.0.1:8501 (Overview, Alerts, Runs)
+	@echo Readiness: curl http://127.0.0.1:8000/health/ready
 
 docker-up:
 	docker compose up -d

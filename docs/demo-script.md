@@ -168,3 +168,28 @@ curl http://127.0.0.1:8000/metrics
 curl http://127.0.0.1:8000/streams/sample_csv/runs
 # attendu : Prometheus text + JSON run history
 ```
+
+## Phase 10 Validation Checklist
+
+```powershell
+make docker-up
+make polish-demo
+# attendu : detect + mlflow_run_id + runs list + dashboard hints
+
+make api
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/health/ready
+# attendu : liveness 200 ; readiness 200 si Postgres+Redis up, sinon 503 degraded
+```
+
+Terminal 2 (while API is running):
+
+```powershell
+make dashboard
+```
+
+Open http://127.0.0.1:8501 — verify three tabs:
+
+- **Overview** — liveness/readiness status, stream table, metrics preview
+- **Alerts** — alert table + "Why this alert?" detail
+- **Runs** — ingestion + detection history, `mlflow_run_id` column when present
