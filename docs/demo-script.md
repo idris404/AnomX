@@ -107,3 +107,29 @@ make postgres-demo
 ```
 
 Inspect payloads in Postgres — NAB rows should include `label` and `dataset` in `observations.payload`.
+
+## Phase 7 Validation Checklist
+
+Terminal 1:
+
+```powershell
+make docker-up
+make orchestrator
+```
+
+Open http://127.0.0.1:3000 — materialize `sample_csv_pipeline` or assets `ingestion_run` → `detection_run`.
+
+> **Windows:** n'utilise pas `http://0.0.0.0:3000` dans le navigateur — ça ne marche pas. Garde le terminal `make orchestrator` ouvert (le serveur tourne en foreground). Le premier chargement peut prendre ~15–20 s.
+
+Terminal 2 (headless):
+
+```powershell
+make orchestrator-demo
+# attendu : job sample_csv_pipeline SUCCESS, same effect as make detect-demo
+```
+
+Verify in Postgres or CLI:
+
+```powershell
+uv run anomx explain --stream sample_csv --limit 3
+```

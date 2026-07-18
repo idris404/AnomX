@@ -24,7 +24,7 @@ jobs:
         run: uv sync --all-packages --group dev
 
       - name: Lint
-        run: uv run ruff check packages/anomx services/api services/dashboard
+        run: uv run ruff check packages/anomx services/api services/dashboard services/orchestrator
 
       - name: Type check
         run: uv run mypy packages/anomx/anomx

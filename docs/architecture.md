@@ -4,42 +4,34 @@
 
 AnomX is a pluggable anomaly detection engine. The codebase follows a strict **library vs. services** split:
 
-- **`packages/anomx/`** — publishable Python library with zero web/orchestration dependencies
-- **`services/api/`** — thin FastAPI layer that depends on `anomx`
+- **`packages/anomx/`** — publishable Python library (no Dagster/FastAPI/Streamlit)
+- **`services/api/`** — FastAPI + ARQ workers
 - **`services/dashboard/`** — Streamlit UI
 - **`services/orchestrator/`** — Dagster assets (Phase 7)
 
-## Phase 5 (done)
+## Phase 7 Scope (current)
 
-API alert routes, Streamlit dashboard, webhook/Slack alerting, ARQ worker.
+Dagster asset-centric orchestration (ADR 002):
 
-## Phase 6 Scope (current)
+| Asset | Wraps | Output |
+|-------|-------|--------|
+| `ingestion_run` | `IngestService.ingest()` | observations in Postgres |
+| `detection_run` | `DetectService.detect_stream()` | scores + alerts + explanations |
 
-Additional connectors via `Source` protocol + `build_source()` factory:
+**Jobs:** `stream_pipeline`, `sample_csv_pipeline`, `nab_pipeline`
 
-| Flux | Connector | `source_type` | Purpose |
-|------|-----------|---------------|---------|
-| A | `NabBatchSource` | `nab_batch` | NAB labeled CSV + anomaly windows in payload |
-| B | `OnlineRetailBatchSource` | `online_retail_batch` | Daily revenue/quantity aggregation |
-| C | `PostgresQuerySource` | `postgres_query` | SQL snapshot poll (Pagila-style queries) |
+**Compromis MVP:** materialisation manuelle via UI/CLI — pas de sensors/schedules, pas de Dagster dans Docker Compose.
 
-CLI unchanged: `anomx ingest --config config/sources/<source>.yaml`
+## Phase 8 Scope (next)
 
-**Compromis MVP** :
-- NAB labels from `combined_windows.json` (not full NAB eval pipeline)
-- Online Retail = synthetic sample script (full UCI file optional offline)
-- Pagila = generic SQL query; demo uses AnomX Postgres replay unless Pagila DB is loaded
-
-## Phase 7 Scope (next)
-
-Dagster orchestration assets.
+Streaming / event-driven ingestion (Kafka, Debezium).
 
 ## Data Flow
 
 ```
-Connectors → Ingestion → Detection → Scoring → Storage → API / Dashboard / Alerting
-                                              ↘ Explain (on alert)
-                                                              ↘ ARQ notify
+Connectors → [ingestion_run] → observations → [detection_run] → scores/alerts
+                                              ↘ Explain (inline)
+Storage → API / Dashboard / ARQ notify
 ```
 
 See `docs/decisions/` for Architecture Decision Records.

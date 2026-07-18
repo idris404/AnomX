@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck api worker dashboard docker-up docker-down db-migrate sample-data ingest-demo clean help nab-data retail-data nab-demo retail-demo postgres-demo
+.PHONY: install test lint typecheck api worker dashboard orchestrator docker-up docker-down db-migrate sample-data ingest-demo clean help nab-data retail-data nab-demo retail-demo postgres-demo orchestrator-demo
 
 help:
 	@echo AnomX — available targets:
@@ -9,6 +9,7 @@ help:
 	@echo   api          Start FastAPI dev server on port 8000
 	@echo   worker       Start ARQ worker for async alert notifications
 	@echo   dashboard    Start Streamlit dashboard on port 8501
+	@echo   orchestrator Start Dagster UI on port 3000
 	@echo   docker-up    Start Postgres and Redis containers
 	@echo   docker-down  Stop and remove containers
 	@echo   db-migrate   Apply Phase 1 Postgres migration (existing DBs)
@@ -22,6 +23,7 @@ help:
 	@echo   nab-demo       Download NAB sample + ingest + detect
 	@echo   retail-demo    Generate retail sample + ingest + detect
 	@echo   postgres-demo  Ingest hourly aggregate from sample_csv observations
+	@echo   orchestrator-demo Materialize sample_csv pipeline via Dagster job
 	@echo   api-demo     explain-demo + curl-style API smoke hints
 	@echo   clean        Remove caches and build artifacts
 
@@ -32,7 +34,7 @@ test:
 	uv run pytest
 
 lint:
-	uv run ruff check packages/anomx services/api services/dashboard
+	uv run ruff check packages/anomx services/api services/dashboard services/orchestrator
 
 typecheck:
 	uv run mypy packages/anomx/anomx
@@ -45,6 +47,13 @@ worker:
 
 dashboard:
 	uv run --no-sync --directory services/dashboard streamlit run app/main.py --server.port 8501
+
+orchestrator:
+	@echo Open Dagster UI at http://127.0.0.1:3000 (keep this terminal running)
+	uv run --no-sync --directory services/orchestrator dagster dev -m anomx_orchestrator.definitions -h 127.0.0.1 -p 3000
+
+orchestrator-demo: sample-data
+	uv run --directory services/orchestrator dagster job execute -m anomx_orchestrator.definitions -j sample_csv_pipeline
 
 docker-up:
 	docker compose up -d

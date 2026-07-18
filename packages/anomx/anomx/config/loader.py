@@ -31,8 +31,23 @@ def load_app_settings(path: Path | None = None) -> AppSettings:
     return AppSettings.model_validate(load_yaml(config_path))
 
 
-def load_source_config(path: Path) -> SourceConfig:
-    return TypeAdapter(SourceConfig).validate_python(load_yaml(path))
+def load_source_config(path: Path, *, path_base: Path | None = None) -> SourceConfig:
+    data = load_yaml(path)
+    if path_base is not None:
+        data = _resolve_relative_source_paths(data, path_base)
+    return TypeAdapter(SourceConfig).validate_python(data)
+
+
+def _resolve_relative_source_paths(data: dict[str, Any], base: Path) -> dict[str, Any]:
+    """Resolve relative file paths in source YAML against a project root."""
+    resolved = dict(data)
+    for key in ("path", "labels_path"):
+        value = resolved.get(key)
+        if isinstance(value, str):
+            candidate = Path(value)
+            if not candidate.is_absolute():
+                resolved[key] = str((base / candidate).resolve())
+    return resolved
 
 
 def load_csv_source_config(path: Path) -> CsvBatchSourceConfig:

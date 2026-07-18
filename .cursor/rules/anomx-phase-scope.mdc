@@ -31,7 +31,11 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 
 **Built**: `NabBatchSource`, `OnlineRetailBatchSource`, `PostgresQuerySource`, `build_source()` factory, `load_source_config()`, demo scripts + YAML configs
 
-## Phase 7 (next) — Dagster orchestration
+## Phase 7 (done) — Dagster orchestration
+
+**Built**: `services/orchestrator/`, assets `ingestion_run` + `detection_run`, jobs `sample_csv_pipeline` / `nab_pipeline`, `make orchestrator`
+
+## Phase 8 (next) — Streaming / Kafka
 
 ## Demo datasets (do not cherry-pick metrics)
 

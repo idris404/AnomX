@@ -28,3 +28,7 @@ reports/
 # OS
 .DS_Store
 Thumbs.db
+
+# Dagster (orchestrator local dev)
+services/orchestrator/.dagster/
+services/orchestrator/.tmp_dagster_home*/
