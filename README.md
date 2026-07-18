@@ -2,7 +2,7 @@
 
 **Anomaly detection you can actually run end-to-end** — ingest time series, score them with pluggable detectors, explain the alerts, and expose everything through a CLI, REST API, and operator dashboard.
 
-Built as a data-engineering portfolio project: batch and streaming pipelines, Postgres storage, Dagster orchestration, MLflow experiment tracking, and Prometheus metrics. Not a black-box ML demo — every stage is inspectable.
+Batch and streaming pipelines, Postgres storage, Dagster orchestration, MLflow experiment tracking, and Prometheus metrics.
 
 [![CI](https://github.com/idris404/AnomX/actions/workflows/ci.yml/badge.svg)](https://github.com/idris404/AnomX/actions/workflows/ci.yml)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
