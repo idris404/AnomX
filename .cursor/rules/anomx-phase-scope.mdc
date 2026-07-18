@@ -39,7 +39,11 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 
 **Built**: Redpanda in Docker, `KafkaJsonSource`, `StreamIngestService`, `services/stream-worker/`, `make kafka-demo`
 
-## Phase 9 (next) — MLOps / observability
+## Phase 9 (done) — MLOps / observability
+
+**Built**: MLflow detect tracking, `RunService`, `GET /streams/{name}/runs`, Prometheus `/metrics`, `make mlops-demo`
+
+## Phase 10 (next) — Polish
 
 ## Demo datasets (do not cherry-pick metrics)
 

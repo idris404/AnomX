@@ -151,3 +151,20 @@ uv run anomx explain --stream kafka_sample --limit 3
 ```
 
 Redpanda UI/console: broker on `127.0.0.1:19092`. MVP uses JSON on topic `anomx.observations` — Debezium CDC is the production path for Flux C (Pagila).
+
+## Phase 9 Validation Checklist
+
+```powershell
+make mlops-demo
+# attendu : detect JSON with mlflow_run_id, runs list (ingestion + detection)
+
+# optional — full mlflow package for the UI (tracking uses mlflow-skinny)
+uv pip install mlflow
+uv run mlflow ui --backend-store-uri file:./mlruns
+# attendu : experiment anomx-detect with latest run metrics
+
+make api
+curl http://127.0.0.1:8000/metrics
+curl http://127.0.0.1:8000/streams/sample_csv/runs
+# attendu : Prometheus text + JSON run history
+```

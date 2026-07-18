@@ -26,6 +26,7 @@ help:
 	@echo   postgres-demo  Ingest hourly aggregate from sample_csv observations
 	@echo   orchestrator-demo Materialize sample_csv pipeline via Dagster job
 	@echo   kafka-demo     Publish sample CSV to Redpanda + ingest + detect
+	@echo   mlops-demo     Detect + MLflow tracking + run history
 	@echo   api-demo     explain-demo + curl-style API smoke hints
 	@echo   clean        Remove caches and build artifacts
 
@@ -64,6 +65,10 @@ kafka-demo: sample-data docker-up
 	uv run python scripts/publish_sample_to_kafka.py
 	uv run --directory services/stream-worker python -m anomx_stream_worker.main --detect --group-id anomx-demo-run
 	uv run anomx explain --stream kafka_sample --limit 3
+
+mlops-demo: detect-demo
+	uv run anomx runs list --stream sample_csv --limit 5
+	@echo Tracking store: ./mlruns (optional UI: uv pip install mlflow && uv run mlflow ui --backend-store-uri file:./mlruns)
 
 docker-up:
 	docker compose up -d

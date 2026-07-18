@@ -45,6 +45,14 @@ class AlertingSettings(BaseModel):
     slack: SlackAlertingSettings = Field(default_factory=SlackAlertingSettings)
 
 
+class MlflowSettings(BaseModel):
+    """MLflow experiment tracking settings (Phase 9)."""
+
+    enabled: bool = False
+    tracking_uri: str = "file:./mlruns"
+    experiment_name: str = "anomx-detect"
+
+
 class CsvBatchSourceConfig(BaseModel):
     """YAML configuration for a CSV/Parquet batch source."""
 
@@ -144,3 +152,4 @@ class AppSettings(BaseModel):
 
     database: DatabaseSettings = Field(default_factory=DatabaseSettings)
     alerting: AlertingSettings = Field(default_factory=AlertingSettings)
+    mlflow: MlflowSettings = Field(default_factory=MlflowSettings)

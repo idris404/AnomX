@@ -9,6 +9,7 @@ from fastapi import Depends
 from anomx.alerting.service import AlertingService
 from anomx.alerts.service import AlertService
 from anomx.config.models import AlertingSettings, DatabaseSettings
+from anomx.runs.service import RunService
 from app.config import Settings
 
 
@@ -48,3 +49,10 @@ def get_alerting_service(settings: SettingsDep) -> AlertingService:
 
 
 AlertingServiceDep = Annotated[AlertingService, Depends(get_alerting_service)]
+
+
+def get_run_service(settings: SettingsDep) -> RunService:
+    return RunService(database=settings.database_settings())
+
+
+RunServiceDep = Annotated[RunService, Depends(get_run_service)]

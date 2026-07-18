@@ -20,6 +20,9 @@ data/
 !data/samples/.gitkeep
 reports/
 
+# MLflow local tracking store
+mlruns/
+
 # IDE
 .idea/
 .vscode/
