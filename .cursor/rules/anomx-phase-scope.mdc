@@ -35,7 +35,11 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 
 **Built**: `services/orchestrator/`, assets `ingestion_run` + `detection_run`, jobs `sample_csv_pipeline` / `nab_pipeline`, `make orchestrator`
 
-## Phase 8 (next) — Streaming / Kafka
+## Phase 8 (done) — Streaming / Kafka
+
+**Built**: Redpanda in Docker, `KafkaJsonSource`, `StreamIngestService`, `services/stream-worker/`, `make kafka-demo`
+
+## Phase 9 (next) — MLOps / observability
 
 ## Demo datasets (do not cherry-pick metrics)
 
@@ -54,7 +58,8 @@ Do not scope-creep. When asked to implement a feature, check which phase it belo
 | What | Where |
 |------|-------|
 | Connector | `packages/anomx/anomx/connectors/` |
-| Detector | `packages/anomx/anomx/detectors/` |
+| Stream worker | `services/stream-worker/` |
+| Stream config YAML | `configs/streams/` |
 | API route | `services/api/app/routes/` |
 | Config YAML | `config/sources/` or `configs/streams/` |
 | ADR | `docs/decisions/` |

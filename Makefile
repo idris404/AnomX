@@ -1,4 +1,4 @@
-.PHONY: install test lint typecheck api worker dashboard orchestrator docker-up docker-down db-migrate sample-data ingest-demo clean help nab-data retail-data nab-demo retail-demo postgres-demo orchestrator-demo
+.PHONY: install test lint typecheck api worker dashboard orchestrator stream-worker docker-up docker-down db-migrate sample-data ingest-demo clean help nab-data retail-data nab-demo retail-demo postgres-demo orchestrator-demo kafka-demo
 
 help:
 	@echo AnomX — available targets:
@@ -10,7 +10,8 @@ help:
 	@echo   worker       Start ARQ worker for async alert notifications
 	@echo   dashboard    Start Streamlit dashboard on port 8501
 	@echo   orchestrator Start Dagster UI on port 3000
-	@echo   docker-up    Start Postgres and Redis containers
+	@echo   stream-worker Consume one Kafka micro-batch (see kafka-demo)
+	@echo   docker-up    Start Postgres, Redis, and Redpanda
 	@echo   docker-down  Stop and remove containers
 	@echo   db-migrate   Apply Phase 1 Postgres migration (existing DBs)
 	@echo   sample-data  Generate data/samples/example.csv
@@ -24,6 +25,7 @@ help:
 	@echo   retail-demo    Generate retail sample + ingest + detect
 	@echo   postgres-demo  Ingest hourly aggregate from sample_csv observations
 	@echo   orchestrator-demo Materialize sample_csv pipeline via Dagster job
+	@echo   kafka-demo     Publish sample CSV to Redpanda + ingest + detect
 	@echo   api-demo     explain-demo + curl-style API smoke hints
 	@echo   clean        Remove caches and build artifacts
 
@@ -34,7 +36,7 @@ test:
 	uv run pytest
 
 lint:
-	uv run ruff check packages/anomx services/api services/dashboard services/orchestrator
+	uv run ruff check packages/anomx services/api services/dashboard services/orchestrator services/stream-worker
 
 typecheck:
 	uv run mypy packages/anomx/anomx
@@ -54,6 +56,14 @@ orchestrator:
 
 orchestrator-demo: sample-data
 	uv run --directory services/orchestrator dagster job execute -m anomx_orchestrator.definitions -j sample_csv_pipeline
+
+stream-worker:
+	uv run --no-sync --directory services/stream-worker python -m anomx_stream_worker.main --detect
+
+kafka-demo: sample-data docker-up
+	uv run python scripts/publish_sample_to_kafka.py
+	uv run --directory services/stream-worker python -m anomx_stream_worker.main --detect --group-id anomx-demo-run
+	uv run anomx explain --stream kafka_sample --limit 3
 
 docker-up:
 	docker compose up -d

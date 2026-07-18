@@ -22,9 +22,22 @@ Dagster asset-centric orchestration (ADR 002):
 
 **Compromis MVP:** materialisation manuelle via UI/CLI — pas de sensors/schedules, pas de Dagster dans Docker Compose.
 
-## Phase 8 Scope (next)
+## Phase 8 Scope (current)
 
-Streaming / event-driven ingestion (Kafka, Debezium).
+Event-driven ingestion via Redpanda/Kafka (ADR 004):
+
+| Component | Role |
+|-----------|------|
+| `KafkaJsonSource` | Micro-batch consumer (JSON observations) |
+| `StreamIngestService` | Persist micro-batch → Postgres |
+| `services/stream-worker/` | CLI consumer loop |
+| `scripts/publish_sample_to_kafka.py` | Demo producer (replays sample CSV) |
+
+**Compromis MVP:** micro-batch CLI, pas Debezium ni exactly-once — remplace le poll SQL Phase 6 pour Flux C.
+
+## Phase 9+ Scope (next)
+
+MLOps / model registry, observability polish, optional Next.js dashboard.
 
 ## Data Flow
 

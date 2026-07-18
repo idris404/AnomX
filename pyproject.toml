@@ -6,7 +6,7 @@ requires-python = ">=3.11,<3.12"
 readme = "README.md"
 
 [tool.uv.workspace]
-members = ["packages/anomx", "services/api", "services/dashboard", "services/orchestrator"]
+members = ["packages/anomx", "services/api", "services/dashboard", "services/orchestrator", "services/stream-worker"]
 
 [dependency-groups]
 dev = [
@@ -21,14 +21,14 @@ dev = [
 [tool.ruff]
 target-version = "py311"
 line-length = 100
-src = ["packages/anomx", "services/api", "services/dashboard", "services/orchestrator"]
+src = ["packages/anomx", "services/api", "services/dashboard", "services/orchestrator", "services/stream-worker"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
 
 [tool.pytest.ini_options]
 testpaths = ["packages/anomx/tests", "services/api/tests", "services/orchestrator/tests"]
-pythonpath = ["packages/anomx", "services/api", "services/dashboard", "services/orchestrator"]
+pythonpath = ["packages/anomx", "services/api", "services/dashboard", "services/orchestrator", "services/stream-worker"]
 markers = [
     "integration: tests requiring PostgreSQL (docker compose up)",
 ]
