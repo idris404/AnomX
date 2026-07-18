@@ -19,3 +19,8 @@ alerting:
   slack:
     enabled: false
     webhook_url: null
+
+mlflow:
+  enabled: true
+  tracking_uri: sqlite:///mlruns/mlflow.db
+  experiment_name: anomx-detect

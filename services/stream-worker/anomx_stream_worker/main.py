@@ -41,6 +41,7 @@ async def run_once(
         timeout_ms=timeout_ms,
         detect_after=detect_after,
         detect_config_path=str(repo_path(detect_config_path)),
+        settings_path=str(repo_path(settings_path)),
     )
 
     payload = result.model_dump(mode="json")

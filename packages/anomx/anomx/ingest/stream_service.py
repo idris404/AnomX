@@ -31,6 +31,7 @@ class StreamIngestResult(BaseModel):
     kafka_offsets: list[dict[str, int | str]] = Field(default_factory=list)
     detect_run_id: UUID | None = None
     alerts_created: int | None = None
+    mlflow_run_id: str | None = None
     empty_batch: bool = False
 
 
@@ -48,6 +49,7 @@ class StreamIngestService:
         timeout_ms: int = 5_000,
         detect_after: bool = False,
         detect_config_path: str = "config/detectors.yaml",
+        settings_path: str = "config/settings.yaml",
     ) -> StreamIngestResult:
         source = KafkaJsonSource(
             bootstrap_servers=config.bootstrap_servers,
@@ -132,18 +134,28 @@ class StreamIngestService:
 
         detect_run_id: UUID | None = None
         alerts_created: int | None = None
+        mlflow_run_id: str | None = None
         if detect_after and written > 0:
             from pathlib import Path
 
-            from anomx.config.loader import load_detect_config
+            from anomx.config.loader import load_app_settings, load_detect_config
+            from anomx.mlops.tracker import log_detect_run_if_enabled
 
-            detect_config = load_detect_config(Path(detect_config_path))
+            detect_path = Path(detect_config_path)
+            settings = load_app_settings(Path(settings_path))
+            detect_config = load_detect_config(detect_path)
             detect_result = DetectService(database=self._database).detect_stream(
                 config.name,
                 detect_config,
             )
             detect_run_id = detect_result.run_id
             alerts_created = detect_result.alerts_created
+            mlflow_run_id = log_detect_run_if_enabled(
+                settings.mlflow,
+                detect_result,
+                detect_config,
+                detect_config_path=detect_path,
+            )
 
         return StreamIngestResult(
             run_id=run_id,
@@ -154,6 +166,7 @@ class StreamIngestService:
             kafka_offsets=offsets,
             detect_run_id=detect_run_id,
             alerts_created=alerts_created,
+            mlflow_run_id=mlflow_run_id,
         )
 
 

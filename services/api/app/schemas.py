@@ -5,6 +5,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 from anomx.alerts.service import AlertDetail, AlertSummary, StreamSummary
+from anomx.runs.service import RunSummary
 
 
 class HealthResponse(BaseModel):
@@ -32,3 +33,8 @@ class NotifyResponse(BaseModel):
 
 class AlertResponse(BaseModel):
     alert: AlertDetail
+
+
+class RunListResponse(BaseModel):
+    stream: str
+    runs: list[RunSummary]

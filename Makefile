@@ -3,6 +3,7 @@
 help:
 	@echo AnomX — available targets:
 	@echo   install      Sync all workspace dependencies with uv
+	@echo   repair-venv  Kill locked .venv processes and reinstall deps
 	@echo   test         Run pytest across all packages
 	@echo   lint         Run ruff linter
 	@echo   typecheck    Run mypy strict on anomx core
@@ -26,11 +27,17 @@ help:
 	@echo   postgres-demo  Ingest hourly aggregate from sample_csv observations
 	@echo   orchestrator-demo Materialize sample_csv pipeline via Dagster job
 	@echo   kafka-demo     Publish sample CSV to Redpanda + ingest + detect
+	@echo   mlops-demo     Detect + MLflow tracking + run history
 	@echo   api-demo     explain-demo + curl-style API smoke hints
 	@echo   clean        Remove caches and build artifacts
 
 install:
 	uv sync --all-packages --group dev
+
+repair-venv:
+	powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $$_.ExecutablePath -like '*AnomX\\.venv*' } | ForEach-Object { Stop-Process -Id $$_.ProcessId -Force -ErrorAction SilentlyContinue }"
+	if exist .venv rmdir /s /q .venv
+	uv sync --all-packages --group dev --link-mode=copy
 
 test:
 	uv run pytest
@@ -42,17 +49,17 @@ typecheck:
 	uv run mypy packages/anomx/anomx
 
 api:
-	uv run --no-sync --directory services/api uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+	uv run --directory services/api uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
 
 worker:
-	uv run --no-sync --directory services/api arq app.workers.settings.WorkerSettings
+	uv run --directory services/api arq app.workers.settings.WorkerSettings
 
 dashboard:
-	uv run --no-sync --directory services/dashboard streamlit run app/main.py --server.port 8501
+	uv run --directory services/dashboard streamlit run app/main.py --server.port 8501
 
 orchestrator:
 	@echo Open Dagster UI at http://127.0.0.1:3000 (keep this terminal running)
-	uv run --no-sync --directory services/orchestrator dagster dev -m anomx_orchestrator.definitions -h 127.0.0.1 -p 3000
+	uv run --directory services/orchestrator dagster dev -m anomx_orchestrator.definitions -h 127.0.0.1 -p 3000
 
 orchestrator-demo: sample-data
 	uv run --directory services/orchestrator dagster job execute -m anomx_orchestrator.definitions -j sample_csv_pipeline
@@ -64,6 +71,12 @@ kafka-demo: sample-data docker-up
 	uv run python scripts/publish_sample_to_kafka.py
 	uv run --directory services/stream-worker python -m anomx_stream_worker.main --detect --group-id anomx-demo-run
 	uv run anomx explain --stream kafka_sample --limit 3
+
+mlops-demo: detect-demo
+	uv run anomx runs --stream sample_csv --limit 5
+	@echo Tracking store: ./mlruns/mlflow.db
+	@echo Optional MLflow UI: uv pip install mlflow
+	@echo Then run: uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db
 
 docker-up:
 	docker compose up -d

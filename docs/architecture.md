@@ -35,9 +35,22 @@ Event-driven ingestion via Redpanda/Kafka (ADR 004):
 
 **Compromis MVP:** micro-batch CLI, pas Debezium ni exactly-once — remplace le poll SQL Phase 6 pour Flux C.
 
-## Phase 9+ Scope (next)
+## Phase 9 Scope (current)
 
-MLOps / model registry, observability polish, optional Next.js dashboard.
+MLOps + observability (ADR 005):
+
+| Component | Role |
+|-----------|------|
+| `MlflowDetectTracker` | Log detect params/metrics to `./mlruns` |
+| `RunService` | Pipeline run history (ingest + detect) |
+| `GET /streams/{name}/runs` | Operational visibility |
+| `GET /metrics` | Prometheus scrape endpoint |
+
+**Compromis MVP:** file-based MLflow, pas de model registry ni Grafana — suffisant pour démo portfolio.
+
+## Phase 10 Scope (next)
+
+Dashboard polish (optional Next.js), production hardening.
 
 ## Data Flow
 

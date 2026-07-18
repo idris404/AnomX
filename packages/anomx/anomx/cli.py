@@ -20,6 +20,8 @@ from anomx.benchmark.runner import BenchmarkRunner
 from anomx.detect.service import DetectService
 from anomx.explain.service import ExplainService
 from anomx.ingest.service import IngestService
+from anomx.mlops.tracker import log_detect_run_if_enabled
+from anomx.runs.service import RunService
 
 logger = structlog.get_logger(__name__)
 
@@ -98,6 +100,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Path to app settings YAML (database connection)",
     )
 
+    runs_parser = subparsers.add_parser("runs", help="List pipeline runs for a stream")
+    runs_parser.add_argument(
+        "--stream",
+        required=True,
+        help="Stream name",
+    )
+    runs_parser.add_argument(
+        "--limit",
+        type=int,
+        default=10,
+        help="Maximum number of runs to display",
+    )
+    runs_parser.add_argument(
+        "--settings",
+        type=Path,
+        default=Path("config/settings.yaml"),
+        help="Path to app settings YAML (database connection)",
+    )
+
     return parser
 
 
@@ -129,6 +150,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.command == "explain":
         return _run_explain(args.stream, args.limit, args.settings)
 
+    if args.command == "runs":
+        return _run_runs(args.stream, args.limit, args.settings)
+
     parser.print_help()
     return 0 if args.command is None else 1
 
@@ -157,6 +181,12 @@ def _run_detect(stream_name: str, config_path: Path, settings_path: Path) -> int
     app_settings = load_app_settings(settings_path)
     service = DetectService(database=app_settings.database)
     result = service.detect_stream(stream_name, detect_config)
+    mlflow_run_id = log_detect_run_if_enabled(
+        app_settings.mlflow,
+        result,
+        detect_config,
+        detect_config_path=config_path,
+    )
 
     payload = {
         "run_id": str(result.run_id),
@@ -166,7 +196,19 @@ def _run_detect(stream_name: str, config_path: Path, settings_path: Path) -> int
         "observations_scored": result.observations_scored,
         "alerts_created": result.alerts_created,
         "ensemble_threshold": result.ensemble_threshold,
+        "mlflow_run_id": mlflow_run_id,
     }
+    print(json.dumps(payload, indent=2))  # noqa: T201
+    return 0
+
+
+def _run_runs(stream_name: str, limit: int, settings_path: Path) -> int:
+    app_settings = load_app_settings(settings_path)
+    runs = RunService(database=app_settings.database).list_runs_for_stream(
+        stream_name,
+        limit=limit,
+    )
+    payload = [run.model_dump() for run in runs]
     print(json.dumps(payload, indent=2))  # noqa: T201
     return 0
 
