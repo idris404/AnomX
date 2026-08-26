@@ -52,7 +52,7 @@ cd AnomX
 
 make install      # uv sync — creates .venv and installs all workspace packages
 make docker-up    # Postgres :5433, Redis :6379, Redpanda :19092
-make test         # 53 tests (integration tests skip if Postgres is down)
+make test         # 52 tests (integration tests skip if Postgres is down)
 ```
 
 If `uv sync` fails with file-lock errors on Windows, stop any running `make api` / `make orchestrator` terminals, then:
@@ -68,7 +68,7 @@ make repair-venv
 Seed data, run detection, open the dashboard:
 
 ```powershell
-make polish-demo     # ingest → detect → MLflow log → print run history
+make mlops-demo     # ingest → detect → MLflow log → print run history
 ```
 
 **Terminal 1 — API**
@@ -85,17 +85,16 @@ make dashboard
 # http://127.0.0.1:8501
 ```
 
-The dashboard has three tabs: **Overview** (health checks, stream list), **Alerts** (scores + explanations), **Runs** (ingestion and detection history, including MLflow run IDs).
+The Streamlit dashboard lists alerts for a selected stream and shows the explanation for one alert at a time (score, rules, per-detector breakdown). Run history is available via `GET /streams/{name}/runs` and `anomx runs`, not as a dashboard tab.
 
 Verify the API:
 
 ```powershell
 curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/health/ready
 curl http://127.0.0.1:8000/streams/sample_csv/alerts
 ```
 
-`/health` is liveness (process up). `/health/ready` checks Postgres and Redis — returns `503` if Docker isn't running.
+`/health` is a liveness probe (process up). Ingest, detect, and `/streams/...` need Postgres on port **5433**.
 
 ---
 
@@ -167,7 +166,6 @@ Run `make help` for the full list. Common targets grouped by purpose:
 | `make kafka-demo` | Publish to Redpanda → stream worker → detect |
 | `make orchestrator-demo` | Headless Dagster job (`sample_csv_pipeline`) |
 | `make mlops-demo` | Detect + MLflow tracking + run history |
-| `make polish-demo` | Full Phase 10 validation path |
 
 **Quality**
 
@@ -186,7 +184,6 @@ Interactive docs at http://127.0.0.1:8000/docs when the API is running.
 | Method | Path | Description |
 |--------|------|-------------|
 | `GET` | `/health` | Liveness probe |
-| `GET` | `/health/ready` | Readiness — Postgres + Redis |
 | `GET` | `/metrics` | Prometheus exposition format |
 | `GET` | `/streams` | All streams with alert counts |
 | `GET` | `/streams/{name}/alerts` | Alert summaries for a stream |
@@ -281,7 +278,7 @@ For a guided walkthrough of every pipeline stage, see [`docs/demo-script.md`](do
 | `password authentication failed` on ingest | Another Postgres may be bound to port 5433. Check `config/settings.yaml` uses `port: 5433` and run `make docker-up`. |
 | `uv sync` / file lock on Windows | Stop API and Dagster terminals, then `make repair-venv`. |
 | Dagster UI won't load | Use http://127.0.0.1:3000. First load can take ~15 s. Keep the terminal open. |
-| `/health/ready` returns 503 | Docker not running or containers still starting. Wait for `docker compose ps` to show healthy. |
+| `/health` is 200 but ingest/API data routes fail | Docker not running or Postgres still starting. Wait for `docker compose ps` to show healthy, then retry. |
 | Dashboard `ModuleNotFoundError` | Run via `make dashboard` from the repo root (not `streamlit run` manually from another cwd). |
 | Integration tests skipped | Expected without Postgres. Start Docker and re-run `make test`. |
 
