@@ -42,3 +42,8 @@ warn_unused_configs = true
 [[tool.mypy.overrides]]
 module = "sklearn.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "aiokafka.*"
+# aiokafka ships without a py.typed marker; keep the exception scoped to that dependency.
+ignore_missing_imports = true

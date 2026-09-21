@@ -1,4 +1,4 @@
-"""Feature attribution for Isolation Forest (permutation-based, SHAP-compatible output)."""
+"""Feature attribution for Isolation Forest by median replacement."""
 
 from __future__ import annotations
 
@@ -18,10 +18,10 @@ def explain_isolation_forest(
     *,
     max_background: int = 50,
 ) -> DetectorExplanation:
-    """Attribute IF predictions via input perturbation against a fit-window baseline.
+    """Attribute IF predictions via feature replacement against a fit-window baseline.
 
     IsolationForest is not fully supported by SHAP TreeExplainer across platforms.
-    Permutation attribution is used for MVP portability (Windows/Python 3.11).
+    This heuristic replaces each feature with its fit-window median; it is not SHAP.
     """
     if not detector.is_fitted:
         msg = "IsolationForestDetector must be fitted before explaining"
@@ -39,15 +39,15 @@ def explain_isolation_forest(
         perturbed_score = float(-detector._model.decision_function(perturbed)[0])  # noqa: SLF001
         contributions[key] = round(baseline_score - perturbed_score, 4)
 
-    top_feature = max(contributions, key=contributions.get)
+    top_feature = max(contributions, key=lambda name: contributions[name])
     top_value = contributions[top_feature]
     summary = (
-        f"Isolation Forest flagged the point (score={score:.3f}); "
-        f"strongest driver: {top_feature} (contribution {top_value:+.3f})."
+        f"Isolation Forest raw score={score:.3f}; largest median-replacement change: "
+        f"{top_feature} ({top_value:+.3f})."
     )
     rules = [
-        f"Model anomaly score (normalized): {score:.3f}",
-        "Attribution method: permutation vs fit-window medians",
+        f"Model anomaly score (raw): {score:.3f}",
+        "Attribution method: feature replacement with fit-window medians",
         *[f"Feature contribution {name}={value:+.4f}" for name, value in contributions.items()],
     ]
 
@@ -57,7 +57,7 @@ def explain_isolation_forest(
         rules=rules,
         contributions=contributions,
         details={
-            "normalized_score": round(score, 4),
-            "attribution_method": "permutation",
+            "raw_score": round(score, 4),
+            "attribution_method": "median_replacement",
         },
     )

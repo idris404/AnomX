@@ -11,11 +11,7 @@ def build_notification_payload(row: dict[str, Any]) -> dict[str, Any]:
         explanation = {}
 
     observed_at = row.get("observed_at")
-    observed_str = (
-        observed_at.isoformat()
-        if hasattr(observed_at, "isoformat")
-        else str(observed_at) if observed_at is not None else None
-    )
+    observed_str = str(observed_at) if observed_at is not None else None
 
     payload = row.get("payload")
     value = None

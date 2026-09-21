@@ -55,7 +55,17 @@ class ExplanationBuilder:
             for key, value in explanation.contributions.items():
                 feature_contributions[key] = feature_contributions.get(key, 0.0) + value * state.weight
 
-        primary = max(detector_scores, key=detector_scores.get)
+        contributions = {
+            state.name: state.weight
+            * (
+                (detector_scores[state.name] - state.score_min)
+                / (state.score_max - state.score_min)
+                if state.score_max > state.score_min
+                else 0.0
+            )
+            for state in self._ensemble.states
+        }
+        primary = max(contributions, key=lambda name: contributions[name])
         primary_summary = next(
             item.summary for item in detector_explanations if item.detector == primary
         )

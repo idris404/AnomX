@@ -41,20 +41,19 @@ class IsolationForestDetector:
         if not self._is_fitted:
             msg = "IsolationForestDetector must be fitted before scoring"
             raise RuntimeError(msg)
+        if not data:
+            return []
         matrix = _feature_matrix(data, self._feature_keys)
         # Higher score = more anomalous (invert sklearn decision function)
         raw = -self._model.decision_function(matrix)
-        min_val = float(np.min(raw))
-        max_val = float(np.max(raw))
-        if max_val == min_val:
-            return [0.0] * len(raw)
-        normalized = (raw - min_val) / (max_val - min_val)
-        return [float(value) for value in normalized]
+        return [float(value) for value in raw]
 
     def predict(self, data: list[dict[str, Any]]) -> list[bool]:
         if not self._is_fitted:
             msg = "IsolationForestDetector must be fitted before predicting"
             raise RuntimeError(msg)
+        if not data:
+            return []
         matrix = _feature_matrix(data, self._feature_keys)
         predictions = self._model.predict(matrix)
         return [prediction == -1 for prediction in predictions]

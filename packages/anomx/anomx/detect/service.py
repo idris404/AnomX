@@ -96,65 +96,67 @@ class DetectService:
 
             alerts_created = 0
             try:
-                detector_flags = {
-                    state.name: state.detector.predict(records) for state in ensemble.states
-                }
+                with connection.transaction():
+                    detector_flags = {
+                        state.name: state.detector.predict(records) for state in ensemble.states
+                    }
 
-                for index, record in enumerate(records):
-                    observation_id = int(record["observation_id"])
+                    for index, record in enumerate(records):
+                        observation_id = int(record["observation_id"])
 
-                    for detector_name in names:
+                        for detector_name in names:
+                            repository.insert_scores(
+                                detection_run_id,
+                                observation_id,
+                                detector_name,
+                                float(individual[detector_name][index]),
+                                detector_flags[detector_name][index],
+                            )
+
+                        ensemble_score = float(ensemble_scores[index])
+                        is_ensemble_anomaly = ensemble_flags[index]
                         repository.insert_scores(
                             detection_run_id,
                             observation_id,
-                            detector_name,
-                            float(individual[detector_name][index]),
-                            detector_flags[detector_name][index],
-                        )
-
-                    ensemble_score = float(ensemble_scores[index])
-                    is_ensemble_anomaly = ensemble_flags[index]
-                    repository.insert_scores(
-                        detection_run_id,
-                        observation_id,
-                        "ensemble",
-                        ensemble_score,
-                        is_ensemble_anomaly,
-                    )
-
-                    if is_ensemble_anomaly:
-                        detector_scores = {
-                            name: float(individual[name][index]) for name in names
-                        }
-                        explanation = explanation_builder.build(
-                            record,
-                            detector_scores=detector_scores,
-                            ensemble_score=ensemble_score,
-                        )
-                        inserted, alert_id = repository.insert_alert(
-                            detection_run_id,
-                            stream_id,
-                            observation_id,
-                            ensemble_score,
                             "ensemble",
-                            explanation.to_storage_dict(),
+                            ensemble_score,
+                            is_ensemble_anomaly,
                         )
-                        if inserted:
-                            alerts_created += 1
-                        if self._on_alert_created is not None:
-                            self._on_alert_created(alert_id)
 
-                repository.complete_detection_run(
-                    detection_run_id,
-                    {
-                        "source_run_id": str(source_run_id),
-                        "observations_scored": len(records),
-                        "alerts_created": alerts_created,
-                        "ensemble_threshold": threshold,
-                    },
-                )
+                        if is_ensemble_anomaly:
+                            detector_scores = {
+                                name: float(individual[name][index]) for name in names
+                            }
+                            explanation = explanation_builder.build(
+                                record,
+                                detector_scores=detector_scores,
+                                ensemble_score=ensemble_score,
+                            )
+                            inserted, alert_id = repository.insert_alert(
+                                detection_run_id,
+                                stream_id,
+                                observation_id,
+                                ensemble_score,
+                                "ensemble",
+                                explanation.to_storage_dict(),
+                            )
+                            if inserted:
+                                alerts_created += 1
+                            if self._on_alert_created is not None:
+                                self._on_alert_created(alert_id)
+
+                    repository.complete_detection_run(
+                        detection_run_id,
+                        {
+                            "source_run_id": str(source_run_id),
+                            "observations_scored": len(records),
+                            "alerts_created": alerts_created,
+                            "ensemble_threshold": threshold,
+                        },
+                    )
             except Exception as exc:
                 repository.fail_detection_run(detection_run_id, str(exc))
+                connection.commit()
                 logger.exception("detect_failed", stream=stream_name, run_id=str(detection_run_id))
                 raise
 

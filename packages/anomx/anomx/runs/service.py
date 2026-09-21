@@ -54,7 +54,7 @@ def _to_summary(row: dict[str, Any]) -> RunSummary:
         run_id=str(row["id"]),
         run_type=run_type,
         status=str(row["status"]),
-        started_at=_format_timestamp(row.get("started_at")),
+        started_at=_required_timestamp(row["started_at"]),
         finished_at=_format_timestamp(row.get("finished_at")),
         observations_scored=_optional_int(metadata.get("observations_scored")),
         alerts_created=_optional_int(metadata.get("alerts_created")),
@@ -67,8 +67,15 @@ def _format_timestamp(value: Any) -> str | None:
     if value is None:
         return None
     if hasattr(value, "isoformat"):
-        return value.isoformat()
+        return str(value.isoformat())
     return str(value)
+
+
+def _required_timestamp(value: Any) -> str:
+    formatted = _format_timestamp(value)
+    if formatted is None:
+        raise ValueError("Run is missing started_at")
+    return formatted
 
 
 def _optional_int(value: Any) -> int | None:

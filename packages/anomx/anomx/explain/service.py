@@ -52,11 +52,7 @@ def _to_view(row: dict[str, Any]) -> AlertExplanationView:
         explanation = {}
 
     observed_at = row.get("observed_at")
-    observed_str = (
-        observed_at.isoformat()
-        if hasattr(observed_at, "isoformat")
-        else str(observed_at) if observed_at is not None else None
-    )
+    observed_str = str(observed_at) if observed_at is not None else None
 
     return AlertExplanationView(
         alert_id=str(row["id"]),

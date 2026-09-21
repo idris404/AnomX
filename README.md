@@ -2,7 +2,7 @@
 
 **Anomaly detection you can actually run end-to-end** — ingest time series, score them with pluggable detectors, explain the alerts, and expose everything through a CLI, REST API, and operator dashboard.
 
-Batch and streaming pipelines, Postgres storage, Dagster orchestration, MLflow experiment tracking, and Prometheus metrics.
+Batch pipelines and a one-shot Kafka micro-batch consumer, Postgres storage, Dagster orchestration, local MLflow experiment tracking, and API request metrics.
 
 [![CI](https://github.com/idris404/AnomX/actions/workflows/ci.yml/badge.svg)](https://github.com/idris404/AnomX/actions/workflows/ci.yml)
 [![Python 3.11](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/)
@@ -12,7 +12,7 @@ Batch and streaming pipelines, Postgres storage, Dagster orchestration, MLflow e
 
 ## What it does
 
-AnomX ingests observations (CSV, NAB benchmarks, Kafka JSON, Postgres polls), runs an ensemble of detectors, and stores scores + alerts in PostgreSQL. When something looks off, you get a human-readable explanation — MAD z-score rules for statistical spikes, permutation attribution for Isolation Forest.
+AnomX ingests observations (CSV, NAB benchmarks, Kafka JSON, Postgres polls), runs an ensemble of detectors, and stores scores + alerts in PostgreSQL. When something looks off, you get a human-readable explanation — MAD z-score rules for statistical spikes and a fit-window median replacement heuristic for Isolation Forest. These explanations are diagnostic aids, not causal attributions.
 
 The same core library powers everything:
 
@@ -52,7 +52,8 @@ cd AnomX
 
 make install      # uv sync — creates .venv and installs all workspace packages
 make docker-up    # Postgres :5433, Redis :6379, Redpanda :19092
-make test         # 52 tests (integration tests skip if Postgres is down)
+make test-unit    # tests that need no external services
+make test         # full suite; integration tests run when services are available
 ```
 
 If `uv sync` fails with file-lock errors on Windows, stop any running `make api` / `make orchestrator` terminals, then:
@@ -65,10 +66,11 @@ make repair-venv
 
 ## Quick start (5 minutes)
 
-Seed data, run detection, open the dashboard:
+Start the local dependencies, then seed data, run detection, and open the dashboard:
 
 ```powershell
-make mlops-demo     # ingest → detect → MLflow log → print run history
+make docker-up
+make mlops-demo     # ingest → detect → local MLflow log → print run history
 ```
 
 **Terminal 1 — API**
@@ -125,7 +127,7 @@ Re-running ingest on the same file is idempotent (content hash dedupe). Re-runni
 
 | Config | Stream name | Description |
 |--------|-------------|-------------|
-| `config/sources/sample_csv.yaml` | `sample_csv` | Generated 100-row CSV (default demo) |
+| `config/sources/sample_csv.yaml` | `sample_csv` | Generated 200-row CSV with 10 injected spikes (default demo) |
 | `config/sources/nab_cpu_utilization.yaml` | `nab_cpu_utilization` | NAB benchmark slice (labeled) |
 | `config/sources/online_retail_daily.yaml` | `online_retail_daily` | Online Retail II daily aggregate |
 | `config/sources/postgres_observations_hourly.yaml` | `postgres_observations_hourly` | SQL poll against local Postgres |
@@ -172,8 +174,10 @@ Run `make help` for the full list. Common targets grouped by purpose:
 | Command | Description |
 |---------|-------------|
 | `make test` | pytest across all packages |
+| `make test-unit` | pytest without PostgreSQL or Redpanda |
 | `make lint` | ruff |
 | `make typecheck` | mypy strict on `packages/anomx/anomx` |
+| `make build` | Build all workspace packages |
 
 ---
 
@@ -204,22 +208,23 @@ make docker-up
 make kafka-demo
 ```
 
-This publishes sample observations to topic `anomx.observations` on `127.0.0.1:19092`, consumes a micro-batch via `services/stream-worker/`, and runs detection. MVP uses a CLI consumer loop — production would use Debezium CDC and consumer groups with offset management.
+This publishes sample observations to topic `anomx.observations` on `127.0.0.1:19092`, consumes one bounded micro-batch via `services/stream-worker/`, and runs detection. The worker commits offsets after database persistence. It is a manually started demo consumer, without a continuously supervised loop, dead-letter queue, lag monitoring, or production recovery guarantees. Re-publishing the sample creates new Kafka offsets, so it is a new ingestion batch.
 
 ---
 
 ## MLflow & observability
 
-Each `anomx detect` run logs parameters and metrics to a local SQLite store (`./mlruns/mlflow.db`) when enabled in `config/settings.yaml`.
+Each CLI `anomx detect` run logs parameters and counts to a local SQLite store (`./mlruns/mlflow.db` from the repository root) when enabled in `config/settings.yaml`. The relative tracking URI follows the process working directory; the Kafka worker launched from its service directory can create a separate store. No shared tracking server is configured.
 
 Optional UI (requires the full `mlflow` package, not just `mlflow-skinny`):
 
 ```powershell
-uv pip install mlflow
-uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db
+uv run --with mlflow mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db
 ```
 
-Prometheus metrics are exposed at `/metrics` on the API service (HTTP request counts and latency histograms).
+Prometheus metrics are exposed at `/metrics` on the API service (HTTP request counts and latency histograms). They describe API traffic only; they do not measure model drift, detection quality, Kafka lag, or alert delivery. MLflow stores local detection run parameters and counts, not a production model registry or live model monitor.
+
+The credentials in `docker-compose.yml` and `config/settings.yaml` are for local development only. Compose publishes its ports on `127.0.0.1`; the API and dashboard also bind to loopback. Use different credentials and an appropriate network configuration before any shared deployment. If port 5433 is occupied, set `ANOMX_POSTGRES_PORT` for CLI, API, and tests when connecting to a separately mapped local PostgreSQL instance.
 
 ---
 
@@ -258,13 +263,14 @@ Issues and pull requests are welcome. A few conventions to keep the codebase con
    ```powershell
    make lint
    make typecheck
-   make test
+   make test-unit
+   make test  # with PostgreSQL and Redpanda running
    ```
 3. **Scope new features to the right layer:**
    - Connectors and detectors → `packages/anomx/anomx/`
    - HTTP routes → `services/api/app/routes/`
    - Stream configs → `config/sources/` or `configs/streams/`
-4. **Add or update tests** when changing behaviour. Integration tests that need Postgres are marked `@pytest.mark.integration` and skip gracefully when Docker isn't up.
+4. **Add or update tests** when changing behaviour. Integration tests that need PostgreSQL or Redpanda are marked `@pytest.mark.integration` and skip gracefully when those services are unavailable. CI runs `make test-unit`; run `make test` with Docker for the full suite.
 5. **Document non-obvious trade-offs** — if you simplify for MVP, add a note to `docs/decisions/` or the relevant ADR.
 
 For a guided walkthrough of every pipeline stage, see [`docs/demo-script.md`](docs/demo-script.md).
@@ -280,7 +286,7 @@ For a guided walkthrough of every pipeline stage, see [`docs/demo-script.md`](do
 | Dagster UI won't load | Use http://127.0.0.1:3000. First load can take ~15 s. Keep the terminal open. |
 | `/health` is 200 but ingest/API data routes fail | Docker not running or Postgres still starting. Wait for `docker compose ps` to show healthy, then retry. |
 | Dashboard `ModuleNotFoundError` | Run via `make dashboard` from the repo root (not `streamlit run` manually from another cwd). |
-| Integration tests skipped | Expected without Postgres. Start Docker and re-run `make test`. |
+| Integration tests skipped | Expected without PostgreSQL or Redpanda. Start Docker and re-run `make test`. |
 
 ---
 

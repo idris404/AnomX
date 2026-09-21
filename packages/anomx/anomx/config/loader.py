@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, TypeVar
 
@@ -26,9 +27,11 @@ def load_yaml(path: Path) -> dict[str, Any]:
 
 def load_app_settings(path: Path | None = None) -> AppSettings:
     config_path = path or Path("config/settings.yaml")
-    if not config_path.exists():
-        return AppSettings()
-    return AppSettings.model_validate(load_yaml(config_path))
+    settings = AppSettings.model_validate(load_yaml(config_path)) if config_path.exists() else AppSettings()
+    port = os.getenv("ANOMX_POSTGRES_PORT")
+    if port is not None:
+        settings.database.port = int(port)
+    return settings
 
 
 def load_source_config(path: Path, *, path_base: Path | None = None) -> SourceConfig:

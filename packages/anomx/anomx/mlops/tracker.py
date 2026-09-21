@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
 
 import structlog
 
@@ -71,7 +70,7 @@ class MlflowDetectTracker:
                 stream=result.stream_name,
                 mlflow_run_id=mlflow_run_id,
             )
-            return mlflow_run_id
+            return str(mlflow_run_id)
 
 
 def detect_config_params(config: DetectConfig) -> dict[str, str]:

@@ -53,3 +53,66 @@ def test_ingest_10k_rows_idempotent(require_postgres: str, tmp_path: Path) -> No
     finally:
         with psycopg.connect(require_postgres) as connection:
             cleanup_stream(connection, stream_name)
+
+
+@pytest.mark.integration
+def test_ingest_reports_only_rows_inserted_after_deduplication(
+    require_postgres: str, tmp_path: Path
+) -> None:
+    stream_name = f"test_dedupe_{uuid4().hex[:8]}"
+    csv_path = tmp_path / "duplicates.csv"
+    csv_path.write_text(
+        "timestamp,value\n2024-01-01T00:00:00Z,1.0\n2024-01-01T00:00:00Z,1.0\n",
+        encoding="utf-8",
+    )
+    config = CsvBatchSourceConfig(
+        name=stream_name,
+        source_type="csv_batch",
+        path=csv_path,
+        timestamp_column="timestamp",
+        value_column="value",
+    )
+    try:
+        result = IngestService(database=DatabaseSettings()).ingest(config)
+        assert result.records_read == 2
+        assert result.records_written == 1
+    finally:
+        with psycopg.connect(require_postgres) as connection:
+            cleanup_stream(connection, stream_name)
+
+
+@pytest.mark.integration
+def test_ingest_records_failed_run_after_sql_error(
+    require_postgres: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stream_name = f"test_failure_{uuid4().hex[:8]}"
+    csv_path = tmp_path / "failure.csv"
+    generate_timeseries_csv(csv_path, rows=10)
+    config = CsvBatchSourceConfig(
+        name=stream_name,
+        source_type="csv_batch",
+        path=csv_path,
+        timestamp_column="timestamp",
+        value_column="value",
+    )
+
+    def fail_insert(repository: IngestionRepository, *args: object) -> int:
+        repository._connection.execute("SELECT 1 / 0")
+        return 0
+
+    monkeypatch.setattr(IngestionRepository, "insert_observations", fail_insert)
+    try:
+        with pytest.raises(psycopg.errors.DivisionByZero):
+            IngestService(database=DatabaseSettings()).ingest(config)
+        with psycopg.connect(require_postgres) as connection:
+            row = connection.execute(
+                "SELECT r.status, r.metadata FROM runs r "
+                "JOIN streams s ON s.id = r.stream_id WHERE s.name = %s",
+                (stream_name,),
+            ).fetchone()
+            assert row is not None
+            assert row[0] == "failed"
+            assert "division by zero" in row[1]["error"]
+    finally:
+        with psycopg.connect(require_postgres) as connection:
+            cleanup_stream(connection, stream_name)

@@ -23,7 +23,8 @@ def explain_mad(detector: MADDetector, record: dict[str, Any], score: float) -> 
         f"Reference median on fit window: {detector.median:.2f}",
         f"Median absolute deviation (MAD): {detector.mad:.4f}",
         f"Observed {detector.value_key}={value:.2f} → |x−median|/({_MAD_SCALE}×MAD)={robust_z:.2f}",
-        f"Alert because robust z-score {robust_z:.2f} > threshold {detector.threshold:.2f}",
+        f"MAD standalone threshold: {robust_z:.2f} "
+        f"{'>' if robust_z > detector.threshold else '<='} {detector.threshold:.2f}",
     ]
 
     return DetectorExplanation(

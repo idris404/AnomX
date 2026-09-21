@@ -63,7 +63,7 @@ def main() -> None:
 
     df = pd.DataFrame(table_rows)
     st.subheader(f"Alerts — {selected_stream}")
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    st.dataframe(df, width="stretch", hide_index=True)
 
     alert_ids = [str(row["alert_id"]) for row in table_rows]
     selected_alert_id = st.selectbox("Inspect alert", alert_ids)

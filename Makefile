@@ -1,12 +1,16 @@
-.PHONY: install test lint typecheck api worker dashboard orchestrator stream-worker docker-up docker-down db-migrate sample-data ingest-demo clean help nab-data retail-data nab-demo retail-demo postgres-demo orchestrator-demo kafka-demo
+.PHONY: install test test-unit lint typecheck build api worker dashboard orchestrator stream-worker docker-up docker-down db-migrate sample-data ingest-demo clean help nab-data retail-data nab-demo postgres-demo orchestrator-demo kafka-demo
+
+UV ?= uv
 
 help:
 	@echo AnomX — available targets:
 	@echo   install      Sync all workspace dependencies with uv
 	@echo   repair-venv  Kill locked .venv processes and reinstall deps
 	@echo   test         Run pytest across all packages
+	@echo   test-unit    Run tests without external services
 	@echo   lint         Run ruff linter
 	@echo   typecheck    Run mypy strict on anomx core
+	@echo   build        Build all workspace packages
 	@echo   api          Start FastAPI dev server on port 8000
 	@echo   worker       Start ARQ worker for async alert notifications
 	@echo   dashboard    Start Streamlit dashboard on port 8501
@@ -32,7 +36,7 @@ help:
 	@echo   clean        Remove caches and build artifacts
 
 install:
-	uv sync --all-packages --group dev
+	$(UV) sync --locked --all-packages --group dev
 
 repair-venv:
 	powershell -NoProfile -Command "Get-CimInstance Win32_Process | Where-Object { $$_.ExecutablePath -like '*AnomX\\.venv*' } | ForEach-Object { Stop-Process -Id $$_.ProcessId -Force -ErrorAction SilentlyContinue }"
@@ -40,13 +44,19 @@ repair-venv:
 	uv sync --all-packages --group dev --link-mode=copy
 
 test:
-	uv run pytest
+	$(UV) run --locked pytest
+
+test-unit:
+	$(UV) run --locked pytest -m 'not integration'
 
 lint:
-	uv run ruff check packages/anomx services/api services/dashboard services/orchestrator services/stream-worker
+	$(UV) run --locked ruff check packages/anomx services/api services/dashboard services/orchestrator services/stream-worker
 
 typecheck:
-	uv run mypy packages/anomx/anomx
+	$(UV) run --locked mypy packages/anomx/anomx
+
+build:
+	$(UV) build --all-packages
 
 api:
 	uv run --directory services/api uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload
@@ -55,7 +65,7 @@ worker:
 	uv run --directory services/api arq app.workers.settings.WorkerSettings
 
 dashboard:
-	uv run --directory services/dashboard streamlit run app/main.py --server.port 8501
+	uv run --directory services/dashboard streamlit run app/main.py --server.address 127.0.0.1 --server.port 8501
 
 orchestrator:
 	@echo Open Dagster UI at http://127.0.0.1:3000 (keep this terminal running)

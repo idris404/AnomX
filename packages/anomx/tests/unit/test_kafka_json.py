@@ -30,3 +30,15 @@ def test_parse_kafka_json_message_maps_observation() -> None:
 def test_parse_timestamp_rejects_unknown_type() -> None:
     with pytest.raises(ValueError, match="Unsupported timestamp"):
         parse_timestamp(12345)
+
+
+def test_parse_kafka_message_rejects_non_finite_value() -> None:
+    with pytest.raises(ValueError, match="Non-finite value"):
+        parse_kafka_json_message(
+            {"timestamp": "2024-01-01T00:00:00Z", "value": "NaN"},
+            timestamp_field="timestamp",
+            value_field="value",
+            topic="anomx.observations",
+            partition=0,
+            offset=1,
+        )

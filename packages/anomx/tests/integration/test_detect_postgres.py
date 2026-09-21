@@ -55,6 +55,48 @@ def test_detect_after_ingest(require_postgres: str, tmp_path: Path) -> None:
             cleanup_stream(connection, stream_name)
 
 
+@pytest.mark.integration
+def test_detect_records_failed_run_after_sql_error(
+    require_postgres: str, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    stream_name = f"test_detect_failure_{uuid4().hex[:8]}"
+    csv_path = tmp_path / "detect_failure.csv"
+    generate_timeseries_csv(csv_path, rows=30)
+    source = CsvBatchSourceConfig(
+        name=stream_name,
+        source_type="csv_batch",
+        path=csv_path,
+        timestamp_column="timestamp",
+        value_column="value",
+    )
+    settings = DatabaseSettings()
+    try:
+        IngestService(database=settings).ingest(source)
+
+        def fail_score(repository: DetectionRepository, *args: object) -> None:
+            repository._connection.execute("SELECT 1 / 0")
+
+        monkeypatch.setattr(DetectionRepository, "insert_scores", fail_score)
+        with pytest.raises(psycopg.errors.DivisionByZero):
+            DetectService(database=settings).detect_stream(
+                stream_name,
+                DetectConfig(detectors=[DetectorConfig(name="mad", type="mad", weight=1.0)]),
+            )
+        with psycopg.connect(require_postgres) as connection:
+            row = connection.execute(
+                "SELECT r.status, r.metadata FROM runs r "
+                "JOIN streams s ON s.id = r.stream_id "
+                "WHERE s.name = %s AND r.metadata->>'run_type' = 'detection'",
+                (stream_name,),
+            ).fetchone()
+            assert row is not None
+            assert row[0] == "failed"
+            assert "division by zero" in row[1]["error"]
+    finally:
+        with psycopg.connect(require_postgres) as connection:
+            cleanup_stream(connection, stream_name)
+
+
 def test_load_default_detector_config() -> None:
     config = load_detect_config(Path("config/detectors.yaml"))
     assert len(config.detectors) == 2

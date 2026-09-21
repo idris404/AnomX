@@ -126,12 +126,14 @@ class IngestionRepository:
             for record in records
         ]
 
+        written = 0
         with self._connection.cursor() as cursor:
             for offset in range(0, len(params), batch_size):
                 batch = params[offset : offset + batch_size]
                 cursor.executemany(sql, batch)
+                written += cursor.rowcount
 
-        return len(records)
+        return written
 
     def count_observations_for_stream(self, stream_id: UUID) -> int:
         row = self._connection.execute(

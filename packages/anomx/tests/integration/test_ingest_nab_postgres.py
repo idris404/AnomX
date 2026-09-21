@@ -19,12 +19,12 @@ from tests.helpers import cleanup_stream
 
 @pytest.fixture
 def require_postgres() -> str:
-    dsn = "postgresql://anomx:anomx@localhost:5433/anomx"
+    dsn = DatabaseSettings().dsn
     try:
         with psycopg.connect(dsn) as connection:
             connection.execute("SELECT 1")
     except psycopg.Error:
-        pytest.skip("PostgreSQL is not available on localhost:5433")
+        pytest.skip(f"PostgreSQL is not available at {dsn}")
     return dsn
 
 

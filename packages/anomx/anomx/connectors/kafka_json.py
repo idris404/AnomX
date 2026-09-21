@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 from datetime import UTC, datetime
 from typing import Any, Literal
 
@@ -122,6 +123,9 @@ def parse_kafka_json_message(
 
     observed_at = parse_timestamp(payload[timestamp_field])
     value = float(payload[value_field])
+    if not math.isfinite(value):
+        msg = f"Non-finite value in Kafka message: {value_field}"
+        raise ValueError(msg)
     observation_payload = {
         key: json_safe(value_item)
         for key, value_item in payload.items()

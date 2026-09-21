@@ -41,6 +41,19 @@ def test_isolation_forest_synthetic_metrics() -> None:
     assert precision > 0.6, f"IsolationForest precision too low: {precision:.2f}"
 
 
+def test_isolation_forest_score_does_not_depend_on_batch_members() -> None:
+    records, _ = generate_labeled_records(n=100, n_anomalies=5)
+    detector = IsolationForestDetector(feature_keys=["value"], contamination=0.05)
+    detector.fit(records[:80])
+    assert detector.score([]) == []
+    assert detector.predict([]) == []
+    assert detector.score([records[-1]])[0] == detector.score(records)[-1]
+
+    ensemble = EnsembleDetector(detectors=[detector], names=["isolation_forest"])
+    ensemble.fit(records[:80])
+    assert ensemble.score([records[-1]])[0] == ensemble.score(records)[-1]
+
+
 def test_ensemble_beats_or_matches_best_solo_detector() -> None:
     records, ground_truth = generate_labeled_records(n=1000, n_anomalies=50)
     fit_count = 800

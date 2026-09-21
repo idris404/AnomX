@@ -7,9 +7,11 @@ import socket
 import psycopg
 import pytest
 
+from anomx.config.models import DatabaseSettings
+
 from tests.helpers import cleanup_stream as _cleanup_stream
 
-DEFAULT_DSN = "postgresql://anomx:anomx@localhost:5433/anomx"
+DEFAULT_DSN = DatabaseSettings().dsn
 
 
 def postgres_available(dsn: str = DEFAULT_DSN) -> bool:
@@ -36,7 +38,7 @@ def postgres_dsn() -> str:
 @pytest.fixture
 def require_postgres(postgres_dsn: str) -> str:
     if not postgres_available(postgres_dsn):
-        pytest.skip("PostgreSQL is not available on localhost:5433")
+        pytest.skip(f"PostgreSQL is not available at {postgres_dsn}")
     return postgres_dsn
 
 

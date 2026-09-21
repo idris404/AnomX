@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -12,7 +13,7 @@ class DatabaseSettings(BaseModel):
     """PostgreSQL connection settings."""
 
     host: str = "localhost"
-    port: int = 5433
+    port: int = Field(default_factory=lambda: int(os.getenv("ANOMX_POSTGRES_PORT", "5433")))
     user: str = "anomx"
     password: str = "anomx"
     db: str = "anomx"

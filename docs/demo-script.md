@@ -1,170 +1,50 @@
-# Demo Script (Phase 5+)
+# Recruiter demo (local reference implementation)
 
-This document will contain the 10-minute recruiter demo script once the MVP is complete.
+Run these commands from the repository root with Python 3.11, uv, Docker, and Make installed. PostgreSQL uses host port 5433; Redpanda uses 19092. Compose binds both to `127.0.0.1`; its credentials are only for local development. This demo needs PostgreSQL; Redpanda is needed only for the optional Kafka step.
 
-## Phase 1 Validation Checklist
+## Five-minute path
 
-```powershell
+```sh
 make install
 make docker-up
-make test                 # 11 tests including 10k-row integration
-make sample-data
-make ingest-demo          # first run: 100 rows written
-make ingest-demo          # second run: skipped=true (idempotent)
+docker compose ps                 # wait for PostgreSQL to be healthy
+make sample-data                 # 200 rows, including 10 injected spikes
+uv run anomx ingest --config config/sources/sample_csv.yaml
+uv run anomx ingest --config config/sources/sample_csv.yaml
+uv run anomx detect --stream sample_csv --config config/detectors.yaml
+uv run anomx explain --stream sample_csv --limit 1
+uv run anomx runs --stream sample_csv --limit 3
 ```
 
-Expected ingest output (first run):
+The first ingestion reports `records_read: 200`, `records_written: 200`, `skipped: false` on a fresh database. The second reports `records_written: 0`, `skipped: true` with the same run ID. Detection scores 200 observations and creates alerts on a fresh database. The exact number of alerts depends on the detector implementation and data. The explanation includes the ensemble score and threshold, MAD rule, Isolation Forest attribution, and a primary signal based on each detector's weighted normalized contribution. Rerunning detection updates existing alerts, so `alerts_created` can be 0 while the alerts remain available.
 
-```json
-{"records_read": 100, "records_written": 100, "skipped": false}
-```
+In a second terminal:
 
-Expected ingest output (second run):
-
-```json
-{"records_read": 100, "records_written": 0, "skipped": true}
-```
-
-## Phase 3 Validation Checklist
-
-```powershell
-make benchmark
-# attendu : reports/benchmark_*.json + reports/benchmark_*.md
-
-# Re-run identique → mêmes métriques P/R/F1 (latence peut varier)
-make benchmark
-```
-
-Inspect the Markdown report for detector comparison. Mixed anomaly types (point + contextual + drift) intentionally stress-test detector limits — MAD recall will be lower than on point-only spikes.
-
-## Phase 4 Validation Checklist
-
-```powershell
-make explain-demo
-# attendu : JSON avec summary, rules (median/MAD/z-score), feature_contributions
-
-uv run anomx explain --stream sample_csv --limit 3
-```
-
-Expected explain output fields:
-
-- `summary` — one-line ensemble + primary detector reason
-- `rules` — MAD rules + IF permutation attribution lines
-- `feature_contributions` — weighted feature drivers (e.g. `value`)
-
-Re-run `make detect-demo` on an existing stream updates explanations in place (alert dedupe upsert).
-
-## Phase 5 Validation Checklist
-
-Prerequisite (once per env change):
-
-```powershell
-make install
-```
-
-Terminal 1:
-
-```powershell
-make docker-up
-make explain-demo
+```sh
 make api
 ```
 
-Terminal 2 (while API is running — use `--no-sync` via Makefile to avoid Windows file locks on `anomx.exe`):
+Then check the actual data and API telemetry:
 
-```powershell
-make dashboard
-```
-
-Open http://localhost:8501 in the browser.
-
-Optional async alerting (requires webhook/Slack enabled in `config/settings.yaml`):
-
-```powershell
-make worker
-curl -X POST "http://localhost:8000/alerts/<alert_id>/notify?async=true"
-```
-
-Expected:
-- API returns alerts with `summary`, `rules`, `feature_contributions`
-- Dashboard shows alert table + "Why this alert?" detail panel
-- Worker logs `notify_alert_complete` when alerters are enabled
-
-## Phase 6 Validation Checklist
-
-```powershell
-make nab-data
-make nab-demo
-# attendu : stream nab_cpu_utilization ingéré + detect
-
-make retail-data
-make retail-demo
-# attendu : stream online_retail_daily (120 jours agrégés)
-
-make explain-demo
-make postgres-demo
-# attendu : stream postgres_observations_hourly (~200 points replay depuis sample_csv)
-```
-
-Inspect payloads in Postgres — NAB rows should include `label` and `dataset` in `observations.payload`.
-
-## Phase 7 Validation Checklist
-
-Terminal 1:
-
-```powershell
-make docker-up
-make orchestrator
-```
-
-Open http://127.0.0.1:3000 — materialize `sample_csv_pipeline` or assets `ingestion_run` → `detection_run`.
-
-> **Windows:** n'utilise pas `http://0.0.0.0:3000` dans le navigateur — ça ne marche pas. Garde le terminal `make orchestrator` ouvert (le serveur tourne en foreground). Le premier chargement peut prendre ~15–20 s.
-
-Terminal 2 (headless):
-
-```powershell
-make orchestrator-demo
-# attendu : job sample_csv_pipeline SUCCESS, same effect as make detect-demo
-```
-
-Verify in Postgres or CLI:
-
-```powershell
-uv run anomx explain --stream sample_csv --limit 3
-```
-
-## Phase 8 Validation Checklist
-
-```powershell
-make docker-up
-make kafka-demo
-# attendu : 200 messages published, stream worker ingests + detect, explain JSON
-```
-
-Re-run with a fresh consumer group if the topic was already consumed:
-
-```powershell
-uv run python scripts/publish_sample_to_kafka.py
-uv run --directory services/stream-worker python -m anomx_stream_worker.main --detect --group-id anomx-demo-v2
-uv run anomx explain --stream kafka_sample --limit 3
-```
-
-Redpanda UI/console: broker on `127.0.0.1:19092`. MVP uses JSON on topic `anomx.observations` — Debezium CDC is the production path for Flux C (Pagila).
-
-## Phase 9 Validation Checklist
-
-```powershell
-make mlops-demo
-# attendu : detect JSON with mlflow_run_id, runs list (ingestion + detection)
-
-# optional — full mlflow package for the UI (tracking uses mlflow-skinny)
-uv pip install mlflow
-uv run mlflow ui --backend-store-uri sqlite:///mlruns/mlflow.db
-# attendu : experiment anomx-detect with latest run metrics
-
-make api
-curl http://127.0.0.1:8000/metrics
+```sh
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/streams/sample_csv/alerts
 curl http://127.0.0.1:8000/streams/sample_csv/runs
-# attendu : Prometheus text + JSON run history
+curl http://127.0.0.1:8000/metrics
 ```
+
+`/health` proves only that the API process is running. `/metrics` exposes HTTP request counts and latency, not model quality. `anomx detect` also writes local MLflow run parameters, counts, and the detector config artifact to `mlruns/mlflow.db` when enabled. Open the dashboard in a third terminal with `make dashboard`, then visit http://127.0.0.1:8501 and select `sample_csv` to inspect an alert. The dashboard reads the API; it does not show run history or MLflow charts.
+
+## Optional source and orchestration checks
+
+```sh
+make nab-demo             # downloads NAB data; network required
+make postgres-demo        # polls a PostgreSQL aggregate
+make kafka-demo           # publishes and consumes one bounded Kafka micro-batch
+make orchestrator-demo    # materializes the sample CSV Dagster job
+make test                 # includes marked PostgreSQL and Kafka integration tests
+```
+
+The Kafka worker consumes one bounded batch and exits. It is suitable for demonstrating transport and storage, not continuous production streaming. The PostgreSQL poll is a snapshot query, not change data capture. External NAB download and Dagster CLI execution are optional steps; the automated suite covers the NAB connector and Dagster asset definitions, while the full Docker run covers Kafka and PostgreSQL ingestion.
+
+If port 5433 is occupied by another project, leave that service alone. Map AnomX PostgreSQL to a free host port and set `ANOMX_POSTGRES_PORT` to that port for CLI, API, and tests. The standard `make docker-up` target itself expects port 5433.

@@ -12,7 +12,13 @@ from uuid import UUID
 import structlog
 from pydantic import BaseModel, Field
 
-from anomx.config.models import CsvBatchSourceConfig, DatabaseSettings, SourceConfig
+from anomx.config.models import (
+    CsvBatchSourceConfig,
+    DatabaseSettings,
+    NabBatchSourceConfig,
+    OnlineRetailBatchSourceConfig,
+    SourceConfig,
+)
 from anomx.connectors.factory import build_source
 from anomx.storage.ingestion import IngestionRepository
 from anomx.storage.postgres import postgres_connection
@@ -76,29 +82,31 @@ class IngestService:
             )
 
             try:
-                prepared = [
-                    {
-                        "observed_at": record["observed_at"],
-                        "payload": record["payload"],
-                        "row_fingerprint": row_fingerprint(
-                            stream_id,
-                            record["observed_at"],
-                            record["payload"],
-                        ),
-                    }
-                    for record in records
-                ]
-                written = repository.insert_observations(run_id, stream_id, prepared)
-                repository.complete_run(
-                    run_id,
-                    {
-                        "content_hash": content_hash,
-                        **_source_run_metadata(config),
-                    },
-                    row_count=written,
-                )
+                with connection.transaction():
+                    prepared = [
+                        {
+                            "observed_at": record["observed_at"],
+                            "payload": record["payload"],
+                            "row_fingerprint": row_fingerprint(
+                                stream_id,
+                                record["observed_at"],
+                                record["payload"],
+                            ),
+                        }
+                        for record in records
+                    ]
+                    written = repository.insert_observations(run_id, stream_id, prepared)
+                    repository.complete_run(
+                        run_id,
+                        {
+                            "content_hash": content_hash,
+                            **_source_run_metadata(config),
+                        },
+                        row_count=written,
+                    )
             except Exception as exc:
                 repository.fail_run(run_id, str(exc))
+                connection.commit()
                 logger.exception("ingest_failed", stream=config.name, run_id=str(run_id))
                 raise
 
@@ -150,7 +158,7 @@ def _skipped_result(
 
 
 def _source_run_metadata(config: SourceConfig) -> dict[str, Any]:
-    if config.source_type in _FILE_SOURCE_TYPES:
+    if isinstance(config, (CsvBatchSourceConfig, NabBatchSourceConfig, OnlineRetailBatchSourceConfig)):
         return {"source_path": str(config.path)}
     if config.source_type == "postgres_query":
         return {"query": config.query}
